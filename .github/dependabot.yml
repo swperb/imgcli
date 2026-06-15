@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep the SHA-pinned GitHub Actions current (and re-pin on updates).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  # Keep the MCP server's npm dependencies patched.
+  - package-ecosystem: npm
+    directory: "/mcp"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

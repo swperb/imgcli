@@ -2,6 +2,11 @@
 #ifndef IMGCLI_UTIL_H
 #define IMGCLI_UTIL_H
 
+#include <stdio.h>
+
+/* Write s to f as a JSON string literal (quoted, with the required escapes). */
+void json_str(FILE *f, const char *s);
+
 /* Parse a colour into out[4] = {R,G,B,A}. Accepts (no commas, so it is safe
  * inside a colon-delimited filtergraph):
  *   #rgb  #rrggbb  #rrggbbaa   0xrrggbb[aa]

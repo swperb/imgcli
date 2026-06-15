@@ -4,6 +4,24 @@
 #include <stdlib.h>
 #include <string.h>
 
+void json_str(FILE *f, const char *s) {
+    fputc('"', f);
+    for (; s && *s; s++) {
+        unsigned char c = (unsigned char)*s;
+        switch (c) {
+            case '"':  fputs("\\\"", f); break;
+            case '\\': fputs("\\\\", f); break;
+            case '\n': fputs("\\n", f);  break;
+            case '\r': fputs("\\r", f);  break;
+            case '\t': fputs("\\t", f);  break;
+            default:
+                if (c < 0x20) fprintf(f, "\\u%04x", c);
+                else          fputc(c, f);
+        }
+    }
+    fputc('"', f);
+}
+
 static int hexval(int c) {
     if (c >= '0' && c <= '9') return c - '0';
     c = tolower(c);

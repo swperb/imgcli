@@ -144,3 +144,28 @@ jobs:
           echo "$conv" | python3 -c "import sys,json; d=json.load(sys.stdin); t=json.loads(d['result']['content'][0]['text']); assert t['ok'] and t['format']=='png', t; print('convert ok:', t)" \
             || { echo "convert failed: $conv"; docker logs mcp; exit 1; }
           echo "Docker HTTP smoke OK"; docker rm -f mcp
+
+  windows:
+    name: windows (mingw cross-build + wine smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Install mingw-w64 + wine
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 wine wine64
+      - name: Cross-compile imgcli.exe
+        run: |
+          x86_64-w64-mingw32-gcc -std=gnu11 -O2 -Wall -Wextra -Wformat -Wformat-security \
+            -fstack-protector-strong -static \
+            -Wno-unused-but-set-variable -Wno-deprecated-declarations \
+            src/*.c -lm -o imgcli.exe
+          file imgcli.exe
+      - name: Smoke test under wine
+        env:
+          WINEDEBUG: "-all"
+        run: |
+          wine ./imgcli.exe --version
+          wine ./imgcli.exe -y -i testsrc=64x64 -vf "scale=32:-1,grayscale" out.png
+          test -f out.png && echo "windows binary runs ✓"

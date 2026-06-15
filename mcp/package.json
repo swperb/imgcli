@@ -1,9 +1,9 @@
 {
   "name": "imgcli-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "mcpName": "io.github.swperb/imgcli",
-  "description": "MCP server exposing imgcli — convert, resize, crop, filter & composite images as native agent tools",
-  "keywords": ["mcp", "model-context-protocol", "image", "image-conversion", "imgcli", "resize", "convert", "ffmpeg", "imagemagick", "agent", "tool"],
+  "description": "MCP server exposing imgcli — convert, resize, crop, filter & composite images as native agent tools (stdio + streamable HTTP)",
+  "keywords": ["mcp", "model-context-protocol", "image", "image-conversion", "imgcli", "resize", "convert", "ffmpeg", "imagemagick", "agent", "tool", "smithery"],
   "homepage": "https://github.com/swperb/imgcli/tree/main/mcp",
   "repository": { "type": "git", "url": "git+https://github.com/swperb/imgcli.git", "directory": "mcp" },
   "license": "MIT",

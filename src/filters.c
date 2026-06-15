@@ -77,7 +77,7 @@ static Image *f_scale(char **a, int n, Image *in, AppContext *app, char **err) {
     if (w == -1 && h == -1) { seterr(err, "scale needs at least one of W/H"); return NULL; }
     if (w == -1) w = (int)lround((double)in->w * h / in->h);
     if (h == -1) h = (int)lround((double)in->h * w / in->w);
-    if (w <= 0 || h <= 0) { seterr(err, "scale produced non-positive size"); return NULL; }
+    if (!img_dims_ok(w, h)) { seterr(err, "scale target invalid or exceeds safety limit"); return NULL; }
 
     Image *out = img_alloc(w, h);
     if (!out) { seterr(err, "out of memory"); return NULL; }
@@ -103,7 +103,7 @@ static Image *f_crop(char **a, int n, Image *in, AppContext *app, char **err) {
     int cw = argi(a, n, 0, in->w), ch = argi(a, n, 1, in->h);
     int x = argi(a, n, 2, (in->w - cw) / 2);   /* default: centre */
     int y = argi(a, n, 3, (in->h - ch) / 2);
-    if (cw <= 0 || ch <= 0) { seterr(err, "crop needs positive W/H"); return NULL; }
+    if (!img_dims_ok(cw, ch)) { seterr(err, "crop dimensions invalid or exceed safety limit"); return NULL; }
     Image *out = img_alloc(cw, ch);
     if (!out) { seterr(err, "out of memory"); return NULL; }
     for (int j = 0; j < ch; j++)
@@ -119,7 +119,7 @@ static Image *f_pad(char **a, int n, Image *in, AppContext *app, char **err) {
     int x = argi(a, n, 2, (w - in->w) / 2), y = argi(a, n, 3, (h - in->h) / 2);
     unsigned char col[4] = {0, 0, 0, 0};
     if (!parse_color(args(a, n, 4, "transparent"), col)) { seterr(err, "pad: bad colour"); return NULL; }
-    if (w <= 0 || h <= 0) { seterr(err, "pad needs positive W/H"); return NULL; }
+    if (!img_dims_ok(w, h)) { seterr(err, "pad dimensions invalid or exceed safety limit"); return NULL; }
     Image *out = img_alloc(w, h);
     if (!out) { seterr(err, "out of memory"); return NULL; }
     for (int j = 0; j < h; j++)
@@ -204,6 +204,7 @@ static Image *f_rotate(char **a, int n, Image *in, AppContext *app, char **err) 
     }
     int nw = (int)ceil(maxx - minx), nh = (int)ceil(maxy - miny);
     if (nw < 1) nw = 1; if (nh < 1) nh = 1;
+    if (!img_dims_ok(nw, nh)) { seterr(err, "rotate result exceeds safety limit (input too large to expand)"); return NULL; }
     Image *out = img_alloc(nw, nh);
     if (!out) { seterr(err, "out of memory"); return NULL; }
     double ncx = nw / 2.0, ncy = nh / 2.0;

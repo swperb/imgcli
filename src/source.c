@@ -45,6 +45,7 @@ Image *source_generate(const char *spec, char **err) {
         int w = 320, h = 240;
         if (argc < 1 || !parse_color(argv[0], col)) { seterr(err, "color: need color=NAME:WxH"); goto done; }
         if (argc >= 2 && !parse_size(argv[1], &w, &h)) { seterr(err, "color: bad size"); goto done; }
+        if (!img_dims_ok(w, h)) { seterr(err, "color: size exceeds safety limit"); goto done; }
         out = img_alloc(w, h);
         if (out) for (int i = 0; i < w * h; i++) memcpy(out->px + i * 4, col, 4);
 
@@ -55,6 +56,7 @@ Image *source_generate(const char *spec, char **err) {
         if (argc < 1 || !parse_size(argv[0], &w, &h)) { seterr(err, "gradient: need gradient=WxH"); goto done; }
         if (argc >= 2 && !parse_color(argv[1], c1)) { seterr(err, "gradient: bad colour 1"); goto done; }
         if (argc >= 3 && !parse_color(argv[2], c2)) { seterr(err, "gradient: bad colour 2"); goto done; }
+        if (!img_dims_ok(w, h)) { seterr(err, "gradient: size exceeds safety limit"); goto done; }
         out = img_alloc(w, h);
         if (out)
             for (int x = 0; x < w; x++) {
@@ -69,6 +71,7 @@ Image *source_generate(const char *spec, char **err) {
         int w = 320, h = 240, sz = 32;
         if (argc < 1 || !parse_size(argv[0], &w, &h)) { seterr(err, "checker: need checker=WxH"); goto done; }
         if (argc >= 2) sz = atoi(argv[1]); if (sz < 1) sz = 1;
+        if (!img_dims_ok(w, h)) { seterr(err, "checker: size exceeds safety limit"); goto done; }
         out = img_alloc(w, h);
         if (out)
             for (int y = 0; y < h; y++)
@@ -83,6 +86,7 @@ Image *source_generate(const char *spec, char **err) {
         /* testsrc=WxH : SMPTE-ish bars + ramp + grid */
         int w = 320, h = 240;
         if (argc < 1 || !parse_size(argv[0], &w, &h)) { seterr(err, "testsrc: need testsrc=WxH"); goto done; }
+        if (!img_dims_ok(w, h)) { seterr(err, "testsrc: size exceeds safety limit"); goto done; }
         out = img_alloc(w, h);
         if (out) {
             static const unsigned char bars[7][3] = {

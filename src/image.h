@@ -15,12 +15,31 @@ typedef struct {
     unsigned char *px;    /* w*h*4 bytes, RGBA RGBA ..., row-major      */
 } Image;
 
+/* Safety limits (defense-in-depth against decompression bombs and integer-
+ * overflow -> undersized allocation -> OOB write; see SECURITY.md). EVERY
+ * frame allocation in the program is bounded by these. Override at build time
+ * with -DIMG_MAX_DIM=.. / -DIMG_MAX_PIXELS=.. if you knowingly need more. */
+#ifndef IMG_MAX_DIM
+#define IMG_MAX_DIM     16384u                  /* max width or height (px)      */
+#endif
+#ifndef IMG_MAX_PIXELS
+#define IMG_MAX_PIXELS  (64u * 1024u * 1024u)   /* max W*H; 64Mpx = 256 MiB RGBA */
+#endif
+
+/* 1 if (w,h) are positive and within IMG_MAX_DIM / IMG_MAX_PIXELS, else 0. */
+int img_dims_ok(long w, long h);
+
 Image *img_alloc(int w, int h);          /* zero-filled (transparent black) */
 Image *img_clone(const Image *src);
 void   img_free(Image *im);
 
-/* Decode any format stb understands (PNG/JPEG/BMP/TGA/GIF/PSD/HDR/PIC/PNM). */
+/* Decode any format stb understands (PNG/JPEG/BMP/TGA/GIF/PSD/HDR/PIC/PNM).
+ * Dimensions are validated against the safety limits BEFORE the pixel data is
+ * decoded, so a crafted file cannot trigger a giant allocation. */
 Image *img_load(const char *path, char **err);
+
+/* Decode from an in-memory buffer (used by the fuzz harness; same limits). */
+Image *img_load_mem(const unsigned char *buf, int len, char **err);
 
 /* Encode by file extension: png, jpg/jpeg, bmp, tga, ppm.
  * jpeg_quality is 1..100 (used only for jpg). Returns 1 on success. */

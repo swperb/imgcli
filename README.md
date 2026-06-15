@@ -38,15 +38,25 @@ tool stays portable and self-contained while still reading/writing the formats
 the world actually uses — the same trade-off ffmpeg makes by leaning on codec
 libraries instead of reinventing them.
 
-## Build
+## Install
 
 ```sh
+# Homebrew (macOS / Linux)
+brew install swperb/tap/imgcli
+
+# Prebuilt binaries: https://github.com/swperb/imgcli/releases
+
+# From source (only a C compiler and -lm required)
 make            # produces ./imgcli
 make demo       # generates a few sample images
 sudo make install   # installs to /usr/local/bin
 ```
 
-Only the C standard library and `-lm` are required.
+### Use it as a native agent tool (MCP)
+
+An [MCP](https://modelcontextprotocol.io) server wraps imgcli so AI agents can
+call `convert_image`, `probe_image`, and `list_filters` directly — see
+[mcp/](mcp/README.md).
 
 ## Usage
 

@@ -1,0 +1,41 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: imgcli-linux-x86_64
+          - os: macos-latest
+            asset: imgcli-macos-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (hardened)
+        run: make
+      - name: Smoke test
+        run: make check
+      - name: Package
+        run: |
+          mkdir -p "dist/imgcli"
+          cp imgcli README.md LICENSE SECURITY.md AGENTS.md llms.txt "dist/imgcli/"
+          tar -C dist -czf "${{ matrix.asset }}.tar.gz" imgcli
+          shasum -a 256 "${{ matrix.asset }}.tar.gz" | tee "${{ matrix.asset }}.tar.gz.sha256"
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ matrix.asset }}.tar.gz
+            ${{ matrix.asset }}.tar.gz.sha256
+          generate_release_notes: true
+          fail_on_unmatched_files: true

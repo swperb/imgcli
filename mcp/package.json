@@ -1,0 +1,26 @@
+{
+  "name": "imgcli-mcp",
+  "version": "0.2.0",
+  "description": "MCP server exposing imgcli — convert, resize, crop, filter & composite images as native agent tools",
+  "keywords": ["mcp", "model-context-protocol", "image", "image-conversion", "imgcli", "resize", "convert", "ffmpeg", "imagemagick", "agent", "tool"],
+  "homepage": "https://github.com/swperb/imgcli/tree/main/mcp",
+  "repository": { "type": "git", "url": "git+https://github.com/swperb/imgcli.git", "directory": "mcp" },
+  "license": "MIT",
+  "type": "module",
+  "bin": { "imgcli-mcp": "dist/index.js" },
+  "files": ["dist", "README.md", "server.json"],
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/node": "^20.14.0"
+  }
+}

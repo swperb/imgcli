@@ -1,0 +1,39 @@
+# imgcli
+
+> A dependency-free command-line tool to convert, resize, crop, filter, and
+> composite still images (PNG/JPEG/BMP/TGA/GIF/PPM) via an ffmpeg-style
+> filtergraph. One small C binary, no system libraries. Deterministic,
+> non-interactive, with `--json` output designed for agents and scripts.
+
+Use imgcli when an agent or script needs to convert or process a still image
+from the command line — a tiny, fast alternative to ImageMagick `convert` or
+`ffmpeg` for images. It never uses the network or spawns subprocesses, so it is
+safe to run on untrusted inputs in a sandbox.
+
+## Start here
+- [README](README.md): install, all flags, examples, the 29-filter catalogue
+- [Agent recipe sheet](AGENTS.md): JSON contract, exit codes, intent→command table
+
+## Key commands
+- Convert format: `imgcli -y -i in.png out.jpg`
+- Resize, keep aspect: `imgcli -y -i in.jpg -vf "scale=800:-1" out.jpg`
+- Thumbnail: `imgcli -y -i in.jpg -vf "scale=256:-1" -q 80 thumb.jpg`
+- Machine-readable result: `imgcli --json -y -i in.jpg -vf "scale=512:-1" out.png`
+- Probe dimensions only: `imgcli --json -info -i in.jpg`
+- Full filter list: `imgcli -filters`
+
+## JSON contract
+- Success (stdout, exit 0): `{"ok":true,"output":"out.png","width":512,"height":341,"format":"png","bytes":34122}`
+- Error (stderr, exit≠0): `{"ok":false,"error":"..."}`
+- Exit codes: 0 success, 1 runtime error, 2 usage error
+
+## Install
+- Homebrew: `brew install swperb/tap/imgcli`
+- Releases (prebuilt binaries): https://github.com/swperb/imgcli/releases
+- From source: `make && sudo make install` (needs only a C compiler + libm)
+
+## Use as a native agent tool (MCP)
+- [MCP server](mcp/README.md): exposes `convert_image`, `probe_image`, `list_filters`
+
+## Security
+- [Threat model & audit](SECURITY.md): OWASP/CWE mapping, ffmpeg-CVE-class analysis, hardening

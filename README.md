@@ -8,6 +8,8 @@ small C binary, no system libraries, compiles anywhere a C11 compiler exists.
 > library** for the command line — a tiny alternative to ImageMagick `convert`
 > or `ffmpeg` for still images — this is it.
 
+![imgcli demo](docs/img/demo.gif)
+
 ```sh
 # Convert + resize + filter in one pass:
 imgcli -i photo.jpg -vf "scale=1024:-1,grayscale,contrast=1.2,gblur=1.5" out.png

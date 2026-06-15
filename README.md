@@ -51,7 +51,7 @@ Only the C standard library and `-lm` are required.
 ## Usage
 
 ```
-imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] OUTPUT
+imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT
 
   -i INPUT     a file, or a generator (testsrc=WxH, color=NAME:WxH,
                gradient=WxH, checker=WxH). Repeat -i for compositing inputs;
@@ -59,8 +59,11 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] OUTPUT
   -vf GRAPH    filtergraph, e.g. "scale=800:-1,grayscale,gblur=2"
   -q N         JPEG quality 1..100 (default 90)
   -y / -n      overwrite / never overwrite the output
+  --json       emit one machine-readable JSON result line (for scripts/agents)
+  --quiet      suppress the human-readable success line
   -filters     list every filter
   -info        print input dimensions and exit
+  -V           print version
   -h           help
 ```
 
@@ -102,6 +105,42 @@ imgcli -i sticker.png -vf "rotate=30:transparent" rotated.png
 imgcli -i testsrc=640x480 card.png
 ```
 
+## For AI agents & scripting
+
+imgcli is built to be a reliable tool in an automated pipeline: **one
+self-contained binary, no dependencies, deterministic, non-interactive, and
+machine-readable**. See [AGENTS.md](AGENTS.md) for a token-economical recipe sheet.
+
+```sh
+# Always pass -y (don't prompt) and --json (parseable result) in automation:
+imgcli --json -y -i in.jpg -vf "scale=512:-1" out.png
+# -> {"ok":true,"output":"out.png","width":512,"height":341,"format":"png","bytes":34122}
+```
+
+- **Deterministic & non-interactive** — never prompts; refuses to overwrite
+  without `-y`; one process per conversion.
+- **Structured output** — `--json` for results, `--quiet` to silence chatter;
+  stable exit codes (`0` ok, `1` runtime error, `2` usage error).
+- **No network, no subprocesses** — safe to run on untrusted inputs in a sandbox.
+- **Probe without converting** — `imgcli --json -info -i file.jpg`.
+
+## Security
+
+imgcli decodes untrusted image files in C, so memory safety is taken seriously.
+The codebase has been audited against the OWASP Top 10, common C/CWE classes, and
+ffmpeg's historical vulnerability classes. Highlights:
+
+- **Decompression-bomb safe** — dimensions are validated from the header *before*
+  pixels are decoded; hard caps on size (16384 px/axis, 64 Mpx).
+- **Integer-overflow-safe allocation** through a single capped choke point.
+- **No protocols/URLs/subprocesses** — ffmpeg's worst class (SSRF / file-read via
+  HLS playlists) is structurally impossible here.
+- **Hardened build** (`_FORTIFY_SOURCE`, stack protector, PIE/RELRO, format
+  warnings), **ASan/UBSan** (`make asan`), and a **fuzz harness** (`make fuzz`).
+
+Full threat model, OWASP/CWE mapping, ffmpeg-CVE-class analysis, and dependency
+policy: **[SECURITY.md](SECURITY.md)**.
+
 ## Layout
 
 ```
@@ -109,8 +148,11 @@ src/image.{h,c}    Image (RGBA frame) + load/save (stb glue, PPM writer)
 src/filters.{h,c}  filtergraph parser + every filter + registry
 src/source.{h,c}   synthetic input generators
 src/util.{h,c}     colour / size parsing
-src/main.c         CLI argument handling
+src/main.c         CLI argument handling (incl. --json output)
 third_party/       vendored stb_image.h, stb_image_write.h (public domain)
+fuzz/              libFuzzer harness for the decode -> filtergraph path
+AGENTS.md          token-economical usage guide for agents/scripts
+SECURITY.md        threat model, OWASP/CWE mapping, hardening, dependency policy
 ```
 
 ## License

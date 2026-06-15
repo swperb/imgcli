@@ -3,7 +3,14 @@
 *.obj
 /imgcli
 imgcli.asan
+imgcli-fuzz
 *.dSYM/
+
+# Fuzzing artifacts
+crash-*
+leak-*
+timeout-*
+/corpus/
 
 # Demo / sample outputs
 demo_*.png

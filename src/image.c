@@ -9,6 +9,9 @@
 /* The stb implementations live here, in exactly one translation unit. */
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
+/* First-line decompression-bomb guard: make stb itself reject any axis larger
+ * than our cap during header parsing, before it allocates pixel memory. */
+#define STBI_MAX_DIMENSIONS ((int)IMG_MAX_DIM)
 #include "../third_party/stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -21,12 +24,24 @@ static char *dupstr(const char *s) {
     return d;
 }
 
+int img_dims_ok(long w, long h) {
+    if (w <= 0 || h <= 0) return 0;
+    if (w > (long)IMG_MAX_DIM || h > (long)IMG_MAX_DIM) return 0;
+    /* (long long) product cannot overflow for values <= IMG_MAX_DIM (16384). */
+    if ((long long)w * (long long)h > (long long)IMG_MAX_PIXELS) return 0;
+    return 1;
+}
+
 Image *img_alloc(int w, int h) {
-    if (w <= 0 || h <= 0) return NULL;
+    /* Central choke point: every generated/filtered frame is allocated here,
+     * so enforcing the safety limits here covers the whole program. */
+    if (!img_dims_ok(w, h)) return NULL;
     Image *im = (Image *)malloc(sizeof *im);
     if (!im) return NULL;
     im->w = w;
     im->h = h;
+    /* w*h is bounded by IMG_MAX_PIXELS, so w*h*4 cannot overflow size_t on any
+     * platform with >=32-bit size_t; calloc also re-checks the *4. */
     im->px = (unsigned char *)calloc((size_t)w * h, 4);
     if (!im->px) { free(im); return NULL; }
     return im;
@@ -44,15 +59,16 @@ void img_free(Image *im) {
     if (im) { free(im->px); free(im); }
 }
 
-Image *img_load(const char *path, char **err) {
-    int w, h, n;
-    /* Force 4 channels so every frame is uniform RGBA regardless of source. */
-    unsigned char *data = stbi_load(path, &w, &h, &n, 4);
+/* Wrap a stb-decoded RGBA buffer in an Image, validating dimensions. Takes
+ * ownership of `data` (frees it on rejection). NULL `data` => decode failed. */
+static Image *wrap_decoded(unsigned char *data, int w, int h, char **err) {
     if (!data) {
-        if (err) {
-            const char *r = stbi_failure_reason();
-            *err = dupstr(r ? r : "decode failed");
-        }
+        if (err) { const char *r = stbi_failure_reason(); *err = dupstr(r ? r : "decode failed"); }
+        return NULL;
+    }
+    if (!img_dims_ok(w, h)) {
+        stbi_image_free(data);
+        if (err) *err = dupstr("image dimensions exceed safety limit (see SECURITY.md)");
         return NULL;
     }
     Image *im = (Image *)malloc(sizeof *im);
@@ -61,6 +77,38 @@ Image *img_load(const char *path, char **err) {
     im->h = h;
     im->px = data; /* stb default allocator is malloc/free, so img_free() is safe */
     return im;
+}
+
+Image *img_load(const char *path, char **err) {
+    int w, h, n;
+    /* Header-only read first: learn the dimensions WITHOUT decoding pixels, so a
+     * decompression bomb (small file claiming huge size) is rejected before any
+     * large allocation. This is the key mitigation against the stb GIF/TGA/PNM
+     * over-allocation class of issues (see SECURITY.md). */
+    if (!stbi_info(path, &w, &h, &n)) {
+        if (err) { const char *r = stbi_failure_reason(); *err = dupstr(r ? r : "decode failed"); }
+        return NULL;
+    }
+    if (!img_dims_ok(w, h)) {
+        if (err) *err = dupstr("image dimensions exceed safety limit (see SECURITY.md)");
+        return NULL;
+    }
+    /* Force 4 channels so every frame is uniform RGBA regardless of source. */
+    return wrap_decoded(stbi_load(path, &w, &h, &n, 4), w, h, err);
+}
+
+Image *img_load_mem(const unsigned char *buf, int len, char **err) {
+    int w, h, n;
+    if (!buf || len <= 0) { if (err) *err = dupstr("empty input"); return NULL; }
+    if (!stbi_info_from_memory(buf, len, &w, &h, &n)) {
+        if (err) { const char *r = stbi_failure_reason(); *err = dupstr(r ? r : "decode failed"); }
+        return NULL;
+    }
+    if (!img_dims_ok(w, h)) {
+        if (err) *err = dupstr("image dimensions exceed safety limit");
+        return NULL;
+    }
+    return wrap_decoded(stbi_load_from_memory(buf, len, &w, &h, &n, 4), w, h, err);
 }
 
 /* Flatten RGBA over an opaque background into a fresh RGB buffer (for jpg/bmp

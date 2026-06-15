@@ -1,0 +1,90 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: build & smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (hardened)
+        run: make
+      - name: Smoke test
+        run: make check
+      - name: Exercise every filter family + formats
+        run: |
+          ./imgcli -y -i testsrc=320x240 card.png
+          ./imgcli --json -y -i card.png -vf "scale=160:-1,crop=120:120,grayscale,contrast=1.2,gblur=2,sharpen,edge,emboss,rotate=20,sepia" out.png
+          ./imgcli --json -y -i card.png -i color=red:64x64 -vf "overlay=20:20,opacity=0.8" out.jpg
+          ./imgcli --json -y -i card.png out.bmp
+          ./imgcli --json -y -i card.png out.tga
+          ./imgcli --json -y -i card.png out.ppm
+          ./imgcli --json -info -i out.png
+
+  sanitizers:
+    name: ASan + UBSan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with ASan/UBSan
+        run: make asan
+      - name: Run battery + adversarial inputs
+        env:
+          ASAN_OPTIONS: detect_leaks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: |
+          ./imgcli.asan -y -i testsrc=640x480 c.png
+          ./imgcli.asan -y -i c.png -vf "scale=200:-1,crop=128:128,grayscale,gblur=3,sharpen,edge,emboss,rotate=33,convolution=0 -1 0 -1 5 -1 0 -1 0,sepia" o.png
+          ./imgcli.asan -y -i c.png -i color=#00ff00aa:80x80 -vf "overlay=10:10,opacity=0.5,tint=red" o.tga
+          # adversarial: oversize/limits, tiny frames, extreme rotate
+          ./imgcli.asan -y -i "testsrc=99999x99999" x.png || true
+          ./imgcli.asan -y -i c.png -vf "scale=20000:20000" x.png || true
+          ./imgcli.asan -y -i "color=transparent:1x1" -vf "rotate=359.9,blur=3,scale=1:1" x.png || true
+          # malformed/garbage inputs must error cleanly, not crash
+          head -c 200 c.png > trunc.png; ./imgcli.asan -y -i trunc.png x.png || true
+          printf 'P6 99999 99999 255 ' > bomb.ppm; ./imgcli.asan -y -i bomb.ppm x.png || true
+          dd if=/dev/urandom of=rand bs=1k count=4 2>/dev/null; ./imgcli.asan -y -i rand x.png || true
+          echo "sanitizer battery passed"
+
+  fuzz-smoke:
+    name: fuzz (60s smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build fuzzer (clang/libFuzzer)
+        run: make fuzz CC=clang
+      - name: Seed corpus
+        run: |
+          make
+          mkdir -p corpus
+          ./imgcli -y -i testsrc=128x96 corpus/a.png
+          ./imgcli -y -i gradient=64x64 corpus/b.bmp
+          ./imgcli -y -i checker=80x80 corpus/c.tga
+          ./imgcli -y -i color=blue:40x40 corpus/d.jpg
+      - name: Run libFuzzer
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+        run: ./imgcli-fuzz -max_total_time=60 -max_len=200000 -timeout=10 corpus
+
+  leaks:
+    name: leaks (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make
+      - name: leak-check the pipeline
+        run: |
+          ./imgcli -y -i testsrc=320x240 c.png
+          MallocStackLogging=1 leaks --atExit -- ./imgcli -y -i c.png -vf "scale=160:-1,grayscale,gblur=2,edge,rotate=20" o.png
+          MallocStackLogging=1 leaks --atExit -- ./imgcli -y -i c.png -i color=red:50x50 -vf "overlay=10:10" o.jpg

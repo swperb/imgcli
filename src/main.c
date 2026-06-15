@@ -1,11 +1,14 @@
 /* main.c - imgcli: an ffmpeg-style command line for still images.
  *
- *   imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] OUTPUT
+ *   imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT
  *
  * INPUT is a file (any format stb decodes) or a synthetic source such as
  * "testsrc=640x480" or "color=red:320x240". The first input is the primary
  * frame; later inputs are reachable from the overlay filter. OUTPUT's format
  * is chosen from its extension (png/jpg/bmp/tga/ppm).
+ *
+ * Exit codes:  0 = success   1 = runtime error (decode/filter/write)
+ *              2 = usage error (bad/missing arguments)
  */
 #include "filters.h"
 #include "image.h"
@@ -14,16 +17,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>     /* strcasecmp */
+#include <sys/stat.h>
 #include <unistd.h>
 
+#define IMGCLI_VERSION "0.2.0"
 #define MAX_INPUTS 16
 
 static void usage(FILE *f) {
     fprintf(f,
-        "imgcli - ffmpeg-style image processing in C\n"
+        "imgcli " IMGCLI_VERSION " - ffmpeg-style image conversion & processing in C\n"
         "\n"
         "Usage:\n"
-        "  imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] OUTPUT\n"
+        "  imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT\n"
         "\n"
         "Options:\n"
         "  -i INPUT     input file, or a generator (testsrc=WxH, color=NAME:WxH,\n"
@@ -32,8 +38,11 @@ static void usage(FILE *f) {
         "  -q N         JPEG quality 1..100 (default 90)\n"
         "  -y           overwrite OUTPUT without asking\n"
         "  -n           never overwrite OUTPUT\n"
+        "  --json       emit a single machine-readable JSON result line\n"
+        "  --quiet      suppress the human-readable success line\n"
         "  -filters     list available filters and exit\n"
         "  -info        print info about each input and exit\n"
+        "  -V, --version  print version and exit\n"
         "  -h, --help   show this help\n"
         "\n"
         "Output formats (by extension): png jpg jpeg bmp tga ppm\n"
@@ -42,7 +51,50 @@ static void usage(FILE *f) {
         "  imgcli -i photo.jpg -vf \"scale=1024:-1\" thumb.png\n"
         "  imgcli -i photo.jpg -vf \"grayscale,contrast=1.2,gblur=1.5\" out.jpg\n"
         "  imgcli -i bg.png -i logo.png -vf \"overlay=20:20\" out.png\n"
-        "  imgcli -i testsrc=640x480 card.png\n");
+        "  imgcli --json -y -i in.png -vf \"scale=256:-1\" out.png\n");
+}
+
+/* Print s as a JSON string literal (quoted, with the required escapes). */
+static void json_str(FILE *f, const char *s) {
+    fputc('"', f);
+    for (; s && *s; s++) {
+        unsigned char c = (unsigned char)*s;
+        switch (c) {
+            case '"':  fputs("\\\"", f); break;
+            case '\\': fputs("\\\\", f); break;
+            case '\n': fputs("\\n", f);  break;
+            case '\r': fputs("\\r", f);  break;
+            case '\t': fputs("\\t", f);  break;
+            default:
+                if (c < 0x20) fprintf(f, "\\u%04x", c);
+                else          fputc(c, f);
+        }
+    }
+    fputc('"', f);
+}
+
+/* Lowercased output format name derived from the file extension. */
+static const char *out_format(const char *path) {
+    const char *dot = strrchr(path, '.');
+    if (!dot) return "unknown";
+    dot++;
+    if (!strcasecmp(dot, "png")) return "png";
+    if (!strcasecmp(dot, "jpg") || !strcasecmp(dot, "jpeg")) return "jpeg";
+    if (!strcasecmp(dot, "bmp")) return "bmp";
+    if (!strcasecmp(dot, "tga")) return "tga";
+    if (!strcasecmp(dot, "ppm")) return "ppm";
+    return "unknown";
+}
+
+/* Emit an error either as a JSON object or a human line; always to stderr. */
+static void emit_error(int json, const char *msg) {
+    if (json) {
+        fputs("{\"ok\":false,\"error\":", stderr);
+        json_str(stderr, msg);
+        fputs("}\n", stderr);
+    } else {
+        fprintf(stderr, "imgcli: %s\n", msg);
+    }
 }
 
 int main(int argc, char **argv) {
@@ -52,57 +104,61 @@ int main(int argc, char **argv) {
     const char *output = NULL;
     int quality = 90;
     int overwrite = -1;        /* -1 ask/refuse, 1 = -y, 0 = -n */
-    int want_filters = 0, want_info = 0;
+    int want_filters = 0, want_info = 0, json = 0, quiet = 0;
+    char msg[512];
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
         if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) { usage(stdout); return 0; }
+        else if (!strcmp(arg, "-V") || !strcmp(arg, "--version")) { printf("imgcli %s\n", IMGCLI_VERSION); return 0; }
         else if (!strcmp(arg, "-filters")) want_filters = 1;
         else if (!strcmp(arg, "-info")) want_info = 1;
+        else if (!strcmp(arg, "--json")) json = 1;
+        else if (!strcmp(arg, "--quiet")) quiet = 1;
         else if (!strcmp(arg, "-y")) overwrite = 1;
         else if (!strcmp(arg, "-n")) overwrite = 0;
         else if (!strcmp(arg, "-i")) {
-            if (i + 1 >= argc) { fprintf(stderr, "imgcli: -i needs an argument\n"); return 2; }
-            if (ninputs >= MAX_INPUTS) { fprintf(stderr, "imgcli: too many inputs\n"); return 2; }
+            if (i + 1 >= argc) { emit_error(json, "-i needs an argument"); return 2; }
+            if (ninputs >= MAX_INPUTS) { emit_error(json, "too many inputs"); return 2; }
             inputs[ninputs++] = argv[++i];
         }
         else if (!strcmp(arg, "-vf")) {
-            if (i + 1 >= argc) { fprintf(stderr, "imgcli: -vf needs an argument\n"); return 2; }
+            if (i + 1 >= argc) { emit_error(json, "-vf needs an argument"); return 2; }
             graph = argv[++i];
         }
         else if (!strcmp(arg, "-q")) {
-            if (i + 1 >= argc) { fprintf(stderr, "imgcli: -q needs an argument\n"); return 2; }
+            if (i + 1 >= argc) { emit_error(json, "-q needs an argument"); return 2; }
             quality = atoi(argv[++i]);
         }
         else if (arg[0] == '-' && arg[1]) {
-            fprintf(stderr, "imgcli: unknown option '%s' (try -h)\n", arg);
+            snprintf(msg, sizeof msg, "unknown option '%s' (try -h)", arg);
+            emit_error(json, msg);
             return 2;
         }
         else {
-            if (output) { fprintf(stderr, "imgcli: multiple outputs given ('%s' and '%s')\n", output, arg); return 2; }
+            if (output) {
+                snprintf(msg, sizeof msg, "multiple outputs given ('%s' and '%s')", output, arg);
+                emit_error(json, msg);
+                return 2;
+            }
             output = arg;
         }
     }
 
     if (want_filters) { filters_print_list(); return 0; }
 
-    if (ninputs == 0) {
-        fprintf(stderr, "imgcli: no input (use -i). Try -h for help.\n");
-        return 2;
-    }
+    if (ninputs == 0) { emit_error(json, "no input (use -i); try -h for help"); return 2; }
 
     /* Load every input (file or generator). */
     Image *loaded[MAX_INPUTS] = {0};
     int rc = 1;
     for (int i = 0; i < ninputs; i++) {
         char *err = NULL;
-        Image *im;
-        if (source_is_generator(inputs[i]))
-            im = source_generate(inputs[i], &err);
-        else
-            im = img_load(inputs[i], &err);
+        Image *im = source_is_generator(inputs[i]) ? source_generate(inputs[i], &err)
+                                                    : img_load(inputs[i], &err);
         if (!im) {
-            fprintf(stderr, "imgcli: cannot open input '%s': %s\n", inputs[i], err ? err : "unknown");
+            snprintf(msg, sizeof msg, "cannot open input '%s': %s", inputs[i], err ? err : "unknown");
+            emit_error(json, msg);
             free(err);
             goto cleanup;
         }
@@ -110,23 +166,34 @@ int main(int argc, char **argv) {
     }
 
     if (want_info) {
-        for (int i = 0; i < ninputs; i++)
-            printf("input %d: %s  %dx%d RGBA\n", i, inputs[i], loaded[i]->w, loaded[i]->h);
+        if (json) {
+            fputs("{\"ok\":true,\"inputs\":[", stdout);
+            for (int i = 0; i < ninputs; i++) {
+                if (i) fputc(',', stdout);
+                fputs("{\"path\":", stdout);
+                json_str(stdout, inputs[i]);
+                printf(",\"width\":%d,\"height\":%d,\"channels\":4}", loaded[i]->w, loaded[i]->h);
+            }
+            fputs("]}\n", stdout);
+        } else {
+            for (int i = 0; i < ninputs; i++)
+                printf("input %d: %s  %dx%d RGBA\n", i, inputs[i], loaded[i]->w, loaded[i]->h);
+        }
         rc = 0;
         goto cleanup;
     }
 
-    if (!output) {
-        fprintf(stderr, "imgcli: no output file given. Try -h for help.\n");
-        goto cleanup;
-    }
+    if (!output) { emit_error(json, "no output file given; try -h for help"); goto cleanup; }
 
-    /* Overwrite policy. */
+    /* Overwrite policy (never prompts - deterministic for scripts/agents). */
     if (access(output, F_OK) == 0) {
-        if (overwrite == 0) { fprintf(stderr, "imgcli: '%s' exists and -n was given\n", output); goto cleanup; }
+        if (overwrite == 0) {
+            snprintf(msg, sizeof msg, "'%s' exists and -n was given", output);
+            emit_error(json, msg); goto cleanup;
+        }
         if (overwrite == -1) {
-            fprintf(stderr, "imgcli: '%s' already exists; pass -y to overwrite\n", output);
-            goto cleanup;
+            snprintf(msg, sizeof msg, "'%s' already exists; pass -y to overwrite", output);
+            emit_error(json, msg); goto cleanup;
         }
     }
 
@@ -135,19 +202,33 @@ int main(int argc, char **argv) {
     char *err = NULL;
     Image *result = run_filtergraph(graph, loaded[0], &app, &err);
     if (!result) {
-        fprintf(stderr, "imgcli: filtergraph error: %s\n", err ? err : "unknown");
+        snprintf(msg, sizeof msg, "filtergraph error: %s", err ? err : "unknown");
+        emit_error(json, msg);
         free(err);
         goto cleanup;
     }
 
     if (!img_save(output, result, quality, &err)) {
-        fprintf(stderr, "imgcli: cannot write '%s': %s\n", output, err ? err : "unknown");
+        snprintf(msg, sizeof msg, "cannot write '%s': %s", output, err ? err : "unknown");
+        emit_error(json, msg);
         free(err);
         img_free(result);
         goto cleanup;
     }
 
-    printf("imgcli: wrote %s (%dx%d)\n", output, result->w, result->h);
+    /* Success. Report machine-readable result and/or a human line. */
+    {
+        struct stat st;
+        long long bytes = (stat(output, &st) == 0) ? (long long)st.st_size : -1;
+        if (json) {
+            fputs("{\"ok\":true,\"output\":", stdout);
+            json_str(stdout, output);
+            printf(",\"width\":%d,\"height\":%d,\"format\":\"%s\",\"bytes\":%lld}\n",
+                   result->w, result->h, out_format(output), bytes);
+        } else if (!quiet) {
+            printf("imgcli: wrote %s (%dx%d)\n", output, result->w, result->h);
+        }
+    }
     img_free(result);
     rc = 0;
 

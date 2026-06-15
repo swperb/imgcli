@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "io.github.swperb/imgcli",
+  "description": "Convert, resize, crop, filter & composite images via the imgcli CLI — a lightweight, dependency-free alternative to ImageMagick/ffmpeg for still images.",
+  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/swperb/imgcli",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "imgcli-mcp",
+      "version": "0.2.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "IMGCLI_BIN",
+          "description": "Path to the imgcli binary if not on PATH (e.g. after `brew install swperb/tap/imgcli`).",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

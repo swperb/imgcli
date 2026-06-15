@@ -25,6 +25,17 @@ brew install swperb/tap/imgcli      # or build from source: make && sudo make in
 
 If it isn't on `PATH`, set `IMGCLI_BIN` to its absolute path.
 
+## Transports
+
+The server picks its transport from the environment, so the same binary works
+locally and when hosted:
+
+- **stdio** (default) — for `npx`, Claude Desktop, Cursor, and the Docker stdio
+  check. Used whenever `PORT` is not set.
+- **Streamable HTTP** — served at `/mcp` when `PORT` is set. This is what hosted
+  platforms such as [Smithery](#deploy-on-smithery) use. The HTTP server is
+  stateless (one MCP server per request), so there is no cross-caller state.
+
 ## Run
 
 ```sh
@@ -32,21 +43,35 @@ npm install      # builds dist/ via the prepare script
 npm start        # stdio MCP server
 # or, once published to npm:
 npx imgcli-mcp
+
+# HTTP mode (what Smithery uses): set PORT, then POST to /mcp
+PORT=8081 npm start
 ```
 
 ## Docker
 
 A root [`Dockerfile`](../Dockerfile) builds the `imgcli` binary and this server
-into one self-contained image (no host install of imgcli needed) and runs it
-over stdio:
+into one self-contained image (no host install of imgcli needed):
 
 ```sh
-docker build -t imgcli-mcp .          # from the repo root
-docker run --rm -i imgcli-mcp         # speaks MCP over stdio
+docker build -t imgcli-mcp .                          # from the repo root
+docker run --rm -i imgcli-mcp                         # MCP over stdio
+docker run --rm -e PORT=8081 -p 8081:8081 imgcli-mcp  # MCP over HTTP at :8081/mcp
 ```
 
-This is also what listing directories (e.g. Glama) use to verify the server
-starts and responds to MCP introspection.
+The stdio form is also what listing directories (e.g. Glama) use to verify the
+server starts and responds to MCP introspection.
+
+## Deploy on Smithery
+
+[Smithery](https://smithery.ai) builds the repo's [`Dockerfile`](../Dockerfile)
+and connects over Streamable HTTP, configured by
+[`smithery.yaml`](../smithery.yaml) (`runtime: container`, `type: http`). Because
+the container sets `PORT`, the server starts in HTTP mode automatically and the
+bundled `imgcli` binary means **no configuration is required**.
+
+To (re)deploy: push to `main`, then on Smithery open the connected repo →
+**Deployments** → **Create Deployment**.
 
 ## Configure in a client
 

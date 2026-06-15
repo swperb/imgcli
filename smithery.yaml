@@ -1,0 +1,19 @@
+# Smithery deployment configuration — https://smithery.ai/docs
+#
+# Smithery builds this repo's Dockerfile and connects to the running container
+# over Streamable HTTP. imgcli-mcp starts in HTTP mode automatically because the
+# container runtime sets PORT (8081); the server then serves MCP at /mcp.
+#
+# No configuration is required: the imgcli binary is compiled into the image, so
+# the three tools (convert_image, probe_image, list_filters) work out of the box.
+runtime: container
+build:
+  dockerfile: Dockerfile
+  dockerBuildPath: .
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    properties: {}
+    required: []
+  exampleConfig: {}

@@ -1,6 +1,6 @@
 # imgcli - ffmpeg-style image conversion & processing in C
 CC      ?= cc
-CFLAGS  ?= -std=c11 -O2 -Wall -Wextra -Wformat -Wformat-security
+CFLAGS  ?= -std=gnu11 -O2 -Wall -Wextra -Wformat -Wformat-security
 LDFLAGS ?=
 LDLIBS  := -lm
 
@@ -47,13 +47,13 @@ install: $(BIN)
 
 # AddressSanitizer + UBSan build (catches OOB/UAF/integer-UB at runtime).
 asan: $(SRC)
-	$(CC) -std=c11 -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer \
+	$(CC) -std=gnu11 -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer \
 	  -Wno-unused-but-set-variable $(SRC) $(LDLIBS) -o imgcli.asan
 
 # libFuzzer harness over decode -> filtergraph. Needs clang WITH the libFuzzer
 # runtime (Linux clang, or full Xcode on macOS - the CLT-only clang lacks it).
 fuzz: fuzz/fuzz_decode.c $(filter-out src/main.c,$(SRC))
-	clang -std=c11 -g -O1 -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer \
+	clang -std=gnu11 -g -O1 -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer \
 	  -Wno-unused-but-set-variable -Wno-deprecated-declarations \
 	  fuzz/fuzz_decode.c src/image.c src/filters.c src/source.c src/util.c $(LDLIBS) \
 	  -o imgcli-fuzz
@@ -61,7 +61,7 @@ fuzz: fuzz/fuzz_decode.c $(filter-out src/main.c,$(SRC))
 # Standalone replay (no libFuzzer runtime needed): feed it files/corpora to
 # validate the harness + decode path under ASan/UBSan anywhere.
 fuzz-replay: fuzz/fuzz_decode.c $(filter-out src/main.c,$(SRC))
-	$(CC) -std=c11 -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer \
+	$(CC) -std=gnu11 -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer \
 	  -DIMGCLI_FUZZ_STANDALONE -Wno-unused-but-set-variable -Wno-deprecated-declarations \
 	  fuzz/fuzz_decode.c src/image.c src/filters.c src/source.c src/util.c $(LDLIBS) \
 	  -o imgcli-fuzz

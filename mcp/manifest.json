@@ -16,6 +16,7 @@
     "url": "https://github.com/swperb/imgcli"
   },
   "license": "MIT",
+  "icon": "icon.png",
   "keywords": ["image", "convert", "resize", "crop", "filter", "imgcli", "ffmpeg", "imagemagick", "cli"],
   "server": {
     "type": "node",

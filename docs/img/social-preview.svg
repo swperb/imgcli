@@ -1,0 +1,43 @@
+<svg width="1280" height="1280" viewBox="0 0 1280 1280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0E1626"/>
+      <stop offset="1" stop-color="#070B14"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1F2937"/>
+      <stop offset="1" stop-color="#0B1220"/>
+    </linearGradient>
+    <clipPath id="photo"><rect x="104" y="116" width="304" height="252" rx="32"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="1280" fill="url(#bg)"/>
+
+  <!-- the 1280x640 card lives in the middle band (y 320..960) so a square
+       rasterizer renders it un-clipped; crop to 1280x640 after. -->
+  <g transform="translate(0,320)">
+    <!-- icon (reused mark) -->
+    <g transform="translate(78,148) scale(0.74)">
+      <rect x="24" y="24" width="464" height="464" rx="112" fill="url(#tile)"/>
+      <rect x="104" y="116" width="304" height="252" rx="32" fill="#F8FAFC"/>
+      <g clip-path="url(#photo)">
+        <circle cx="186" cy="190" r="34" fill="#F59E0B"/>
+        <polygon points="104,368 104,320 178,248 242,312 324,222 408,300 408,368" fill="#F59E0B"/>
+        <polygon points="244,368 244,330 300,286 356,330 356,368" fill="#FBBF24"/>
+      </g>
+      <circle cx="392" cy="388" r="84" fill="#0B1220"/>
+      <circle cx="392" cy="388" r="72" fill="#F59E0B"/>
+      <g stroke="#0B1220" stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <path d="M352 372 H424"/><path d="M408 356 L428 372 L408 388"/>
+        <path d="M432 404 H360"/><path d="M376 388 L356 404 L376 420"/>
+      </g>
+    </g>
+
+    <!-- wordmark + copy -->
+    <text x="560" y="250" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="128" font-weight="700" fill="#F8FAFC">imgcli</text>
+    <text x="566" y="322" font-family="Helvetica, Arial, sans-serif" font-size="46" font-weight="700" fill="#F59E0B">ffmpeg for images</text>
+    <text x="566" y="372" font-family="Helvetica, Arial, sans-serif" font-size="31" fill="#C7CFDB">one small, dependency-free C binary</text>
+    <text x="566" y="446" font-family="Helvetica, Arial, sans-serif" font-size="28" fill="#8B95A7">232 KB binary  ·  0 dependencies  ·  29 filters</text>
+    <text x="566" y="536" font-family="ui-monospace, Menlo, Consolas, monospace" font-size="29" fill="#F59E0B">github.com/swperb/imgcli</text>
+  </g>
+</svg>

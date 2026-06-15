@@ -88,3 +88,19 @@ jobs:
           ./imgcli -y -i testsrc=320x240 c.png
           MallocStackLogging=1 leaks --atExit -- ./imgcli -y -i c.png -vf "scale=160:-1,grayscale,gblur=2,edge,rotate=20" o.png
           MallocStackLogging=1 leaks --atExit -- ./imgcli -y -i c.png -i color=red:50x50 -vf "overlay=10:10" o.jpg
+
+  mcp-build:
+    name: mcp build (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - name: Build the MCP server
+        working-directory: mcp
+        run: |
+          npm ci
+          npm run build

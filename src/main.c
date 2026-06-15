@@ -22,7 +22,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define IMGCLI_VERSION "0.2.0"
+#define IMGCLI_VERSION "0.3.0"
 #define MAX_INPUTS 16
 
 static void usage(FILE *f) {

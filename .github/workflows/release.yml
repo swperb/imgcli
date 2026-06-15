@@ -51,3 +51,53 @@ jobs:
         run: |
           gh release upload "$GITHUB_REF_NAME" \
             "${{ matrix.asset }}.tar.gz" "${{ matrix.asset }}.tar.gz.sha256" --clobber
+
+      # Debian/Ubuntu/WSL package (linux build only). Additive — a failure here
+      # does not affect the tarball already uploaded above.
+      - name: Build and upload .deb
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          PKG="imgcli_${VER}_amd64"
+          mkdir -p "$PKG/DEBIAN" "$PKG/usr/bin" "$PKG/usr/share/doc/imgcli"
+          install -m755 imgcli "$PKG/usr/bin/imgcli"
+          install -m644 README.md "$PKG/usr/share/doc/imgcli/README.md"
+          install -m644 LICENSE  "$PKG/usr/share/doc/imgcli/copyright"
+          cat > "$PKG/DEBIAN/control" <<EOF
+          Package: imgcli
+          Version: ${VER}
+          Section: graphics
+          Priority: optional
+          Architecture: amd64
+          Maintainer: swperb <swperb@users.noreply.github.com>
+          Homepage: https://github.com/swperb/imgcli
+          Description: ffmpeg-style image conversion & processing CLI
+           A tiny, dependency-free command-line tool to convert, resize, crop,
+           filter and composite images via an ffmpeg-style filtergraph.
+          EOF
+          dpkg-deb --build --root-owner-group "$PKG"
+          gh release upload "$GITHUB_REF_NAME" "${PKG}.deb" --clobber
+
+  # Publish the imgcli CLI image to the GitHub Container Registry.
+  # First push creates a private package — make it public once in the repo's
+  # Packages settings. Uses GITHUB_TOKEN; no external account needed.
+  docker:
+    needs: create-release
+    name: docker image (ghcr.io)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Log in to GHCR
+        run: echo "${{ github.token }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Build and push
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          IMG="ghcr.io/${{ github.repository_owner }}/imgcli"
+          docker build -f docker/imgcli.Dockerfile -t "$IMG:$VER" -t "$IMG:latest" .
+          docker push "$IMG:$VER"
+          docker push "$IMG:latest"

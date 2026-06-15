@@ -1,0 +1,14 @@
+# Build artifacts
+*.o
+*.obj
+/imgcli
+imgcli.asan
+*.dSYM/
+
+# Demo / sample outputs
+demo_*.png
+demo_*.jpg
+
+# Editor / OS cruft
+.DS_Store
+*.swp

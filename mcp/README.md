@@ -34,6 +34,20 @@ npm start        # stdio MCP server
 npx imgcli-mcp
 ```
 
+## Docker
+
+A root [`Dockerfile`](../Dockerfile) builds the `imgcli` binary and this server
+into one self-contained image (no host install of imgcli needed) and runs it
+over stdio:
+
+```sh
+docker build -t imgcli-mcp .          # from the repo root
+docker run --rm -i imgcli-mcp         # speaks MCP over stdio
+```
+
+This is also what listing directories (e.g. Glama) use to verify the server
+starts and responds to MCP introspection.
+
 ## Configure in a client
 
 Claude Desktop / Cursor / any MCP client (`mcpServers` config):

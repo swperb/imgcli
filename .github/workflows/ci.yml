@@ -166,6 +166,6 @@ jobs:
         env:
           WINEDEBUG: "-all"
         run: |
-          wine64 ./imgcli.exe --version
-          wine64 ./imgcli.exe -y -i testsrc=64x64 -vf "scale=32:-1,grayscale" out.png
+          wine ./imgcli.exe --version
+          wine ./imgcli.exe -y -i testsrc=64x64 -vf "scale=32:-1,grayscale" out.png
           test -f out.png && echo "windows binary runs ✓"

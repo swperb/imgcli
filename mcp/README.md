@@ -62,16 +62,32 @@ docker run --rm -e PORT=8081 -p 8081:8081 imgcli-mcp  # MCP over HTTP at :8081/m
 The stdio form is also what listing directories (e.g. Glama) use to verify the
 server starts and responds to MCP introspection.
 
-## Deploy on Smithery
+## Publish on Smithery
 
-[Smithery](https://smithery.ai) builds the repo's [`Dockerfile`](../Dockerfile)
-and connects over Streamable HTTP, configured by
-[`smithery.yaml`](../smithery.yaml) (`runtime: container`, `type: http`). Because
-the container sets `PORT`, the server starts in HTTP mode automatically and the
-bundled `imgcli` binary means **no configuration is required**.
+imgcli works on **local file paths**, so the useful Smithery distribution is a
+**local connector** (an [MCP bundle](https://github.com/anthropics/mcpb)) that
+installs and runs on the user's own machine — where it can actually read and
+write their files. A *remote-hosted* imgcli could only ever see generated inputs
+(`testsrc=`, `color=`), never the user's files, so it is not the right model
+here.
 
-To (re)deploy: push to `main`, then on Smithery open the connected repo →
-**Deployments** → **Create Deployment**.
+Build and publish the bundle:
+
+```sh
+cd mcp
+./build-bundle.sh          # -> mcp/imgcli-mcp.mcpb (self-contained, ~3 MB)
+npx -y @smithery/cli@latest mcp publish ./imgcli-mcp.mcpb -n swperb/imgcli
+```
+
+The bundle ships the stdio server plus its production `node_modules` and
+[`manifest.json`](manifest.json); the `imgcli` binary stays a prerequisite
+(`brew install swperb/tap/imgcli`) and is configured via the `imgcli_bin` field
+the host prompts for (defaults to `imgcli` on `PATH`).
+
+> The repo's [`Dockerfile`](../Dockerfile) + [`smithery.yaml`](../smithery.yaml)
+> (`runtime: container`, Streamable HTTP) also support a *hosted* container
+> deployment, but that is only useful for the Smithery playground/demo (it can't
+> reach local files), so the local bundle above is the recommended path.
 
 ## Configure in a client
 

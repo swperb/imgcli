@@ -19,3 +19,6 @@ demo_*.jpg
 # Editor / OS cruft
 .DS_Store
 *.swp
+
+# MCP bundle artifact
+*.mcpb

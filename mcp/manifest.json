@@ -1,0 +1,59 @@
+{
+  "manifest_version": "0.3",
+  "name": "imgcli-mcp",
+  "display_name": "imgcli",
+  "version": "0.3.0",
+  "description": "Convert, resize, crop, filter & composite images locally via the imgcli CLI — a tiny, no-dependency image tool. Runs on your machine so it can read and write your own files.",
+  "long_description": "An MCP server that exposes imgcli (a single, no-dependency C binary) as native tools: convert_image, probe_image, and list_filters. Because it runs locally over stdio, the tools operate on real file paths on your machine. Requires the imgcli binary (brew install swperb/tap/imgcli, or build from source); if it isn't on PATH, set the binary path in the configuration below.",
+  "author": {
+    "name": "swperb",
+    "url": "https://github.com/swperb"
+  },
+  "homepage": "https://github.com/swperb/imgcli/tree/main/mcp",
+  "documentation": "https://github.com/swperb/imgcli/blob/main/mcp/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/swperb/imgcli"
+  },
+  "license": "MIT",
+  "keywords": ["image", "convert", "resize", "crop", "filter", "imgcli", "ffmpeg", "imagemagick", "cli"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "IMGCLI_BIN": "${user_config.imgcli_bin}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "convert_image",
+      "description": "Convert, resize, crop, rotate, filter, or composite an image (output format from the file extension; optional ffmpeg-style filtergraph)."
+    },
+    {
+      "name": "probe_image",
+      "description": "Return an image's width, height, and channel count without converting it."
+    },
+    {
+      "name": "list_filters",
+      "description": "List the full imgcli filter catalogue."
+    }
+  ],
+  "user_config": {
+    "imgcli_bin": {
+      "type": "string",
+      "title": "imgcli binary",
+      "description": "Path to the imgcli binary. Leave as \"imgcli\" if it is on your PATH (e.g. after `brew install swperb/tap/imgcli`); otherwise give an absolute path.",
+      "default": "imgcli",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}

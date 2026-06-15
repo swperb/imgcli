@@ -95,6 +95,7 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT
   -y / -n      overwrite / never overwrite the output
   --json       emit one machine-readable JSON result line (for scripts/agents)
   --quiet      suppress the human-readable success line
+  --dry-run    validate the filtergraph + report output dims; write nothing
   -filters     list every filter (add --json for a machine-readable list)
   -info        print input dimensions and exit
   -V           print version

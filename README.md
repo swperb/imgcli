@@ -1,5 +1,7 @@
 # imgcli — command-line image conversion & processing in C
 
+[![Install on Smithery](https://smithery.ai/badge/swperb/imgcli)](https://smithery.ai/servers/swperb/imgcli)
+
 **A dependency-free CLI to convert, resize, crop, filter, and composite images** —
 PNG, JPEG, BMP, TGA, GIF, PPM, and QOI — driven by an ffmpeg-style filtergraph. One
 small C binary, no system libraries, compiles anywhere a C11 compiler exists.

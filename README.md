@@ -189,6 +189,10 @@ AGENTS.md          token-economical usage guide for agents/scripts
 SECURITY.md        threat model, OWASP/CWE mapping, hardening, dependency policy
 ```
 
+## Contributing
+
+Contributor setup, validation targets, filter-registry guidance, and PR expectations live in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 The imgcli source is yours to use freely. The vendored stb headers are

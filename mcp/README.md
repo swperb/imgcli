@@ -84,6 +84,12 @@ The bundle ships the stdio server plus its production `node_modules` and
 (`brew install swperb/tap/imgcli`) and is configured via the `imgcli_bin` field
 the host prompts for (defaults to `imgcli` on `PATH`).
 
+> **Note:** `manifest.json` deliberately omits a `tools` list. `mcpb pack`
+> forbids per-tool `inputSchema` while Smithery's publish requires it, so
+> declaring tools fails the publish ([smithery-ai/cli#787](https://github.com/smithery-ai/cli/issues/787)).
+> The tools are discovered via introspection at runtime; re-add the block once
+> that issue is resolved.
+
 > The repo's [`Dockerfile`](../Dockerfile) + [`smithery.yaml`](../smithery.yaml)
 > (`runtime: container`, Streamable HTTP) also support a *hosted* container
 > deployment, but that is only useful for the Smithery playground/demo (it can't

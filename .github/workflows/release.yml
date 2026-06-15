@@ -3,9 +3,18 @@ name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)build the Windows asset for"
+        required: true
+        default: "v0.3.0"
 
 permissions:
   contents: write
+
+env:
+  REL_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 jobs:
   # Create the release exactly once, so the parallel build jobs don't race to
@@ -18,11 +27,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
-            --generate-notes --verify-tag || gh release view "$GITHUB_REF_NAME"
+          gh release create "$REL_TAG" --title "$REL_TAG" \
+            --generate-notes --verify-tag || gh release view "$REL_TAG"
 
   build:
     needs: create-release
+    if: github.event_name == 'push'
     name: build ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -85,6 +95,7 @@ jobs:
   # Packages settings. Uses GITHUB_TOKEN; no external account needed.
   docker:
     needs: create-release
+    if: github.event_name == 'push'
     name: docker image (ghcr.io)
     runs-on: ubuntu-latest
     permissions:
@@ -101,3 +112,33 @@ jobs:
           docker build -f docker/imgcli.Dockerfile -t "$IMG:$VER" -t "$IMG:latest" .
           docker push "$IMG:$VER"
           docker push "$IMG:latest"
+
+  # Windows binary, cross-compiled with mingw-w64 (validated under wine in CI).
+  # Runs on tag push, and via workflow_dispatch to attach the .exe to an existing
+  # release (e.g. v0.3.0) without cutting a new tag.
+  build-windows:
+    needs: create-release
+    name: build imgcli-windows-x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Install mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 zip
+      - name: Cross-compile imgcli.exe
+        run: |
+          x86_64-w64-mingw32-gcc -std=gnu11 -O2 -Wall -Wextra -Wformat -Wformat-security \
+            -fstack-protector-strong -static \
+            -Wno-unused-but-set-variable -Wno-deprecated-declarations \
+            src/*.c -lm -o imgcli.exe
+      - name: Package
+        run: |
+          mkdir -p "dist/imgcli"
+          cp imgcli.exe README.md LICENSE SECURITY.md AGENTS.md llms.txt "dist/imgcli/"
+          (cd dist && zip -r ../imgcli-windows-x86_64.zip imgcli)
+          shasum -a 256 imgcli-windows-x86_64.zip > imgcli-windows-x86_64.zip.sha256
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$REL_TAG" \
+            imgcli-windows-x86_64.zip imgcli-windows-x86_64.zip.sha256 --clobber

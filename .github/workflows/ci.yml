@@ -30,6 +30,8 @@ jobs:
           ./imgcli --json -y -i card.png out.bmp
           ./imgcli --json -y -i card.png out.tga
           ./imgcli --json -y -i card.png out.ppm
+          ./imgcli --json -y -i card.png out.qoi
+          ./imgcli --json -y -i out.qoi rt.png   # QOI round-trips back through the decoder
           ./imgcli --json -info -i out.png
 
   sanitizers:
@@ -47,6 +49,7 @@ jobs:
           ./imgcli.asan -y -i testsrc=640x480 c.png
           ./imgcli.asan -y -i c.png -vf "scale=200:-1,crop=128:128,grayscale,gblur=3,sharpen,edge,emboss,rotate=33,convolution=0 -1 0 -1 5 -1 0 -1 0,sepia" o.png
           ./imgcli.asan -y -i c.png -i color=#00ff00aa:80x80 -vf "overlay=10:10,opacity=0.5,tint=red" o.tga
+          ./imgcli.asan -y -i c.png o.qoi; ./imgcli.asan -y -i o.qoi -vf "scale=64:-1,grayscale" q.png  # QOI encode + decode
           # adversarial: oversize/limits, tiny frames, extreme rotate
           ./imgcli.asan -y -i "testsrc=99999x99999" x.png || true
           ./imgcli.asan -y -i c.png -vf "scale=20000:20000" x.png || true
@@ -54,6 +57,8 @@ jobs:
           # malformed/garbage inputs must error cleanly, not crash
           head -c 200 c.png > trunc.png; ./imgcli.asan -y -i trunc.png x.png || true
           printf 'P6 99999 99999 255 ' > bomb.ppm; ./imgcli.asan -y -i bomb.ppm x.png || true
+          head -c 18 o.qoi > trunc.qoi; ./imgcli.asan -info -i trunc.qoi || true   # truncated QOI
+          printf 'qoif\x7f\xff\xff\xff\x7f\xff\xff\xff\x04\x00' > bomb.qoi; ./imgcli.asan -info -i bomb.qoi || true  # QOI dim bomb
           dd if=/dev/urandom of=rand bs=1k count=4 2>/dev/null; ./imgcli.asan -y -i rand x.png || true
           echo "sanitizer battery passed"
 
@@ -72,6 +77,7 @@ jobs:
           ./imgcli -y -i gradient=64x64 corpus/b.bmp
           ./imgcli -y -i checker=80x80 corpus/c.tga
           ./imgcli -y -i color=blue:40x40 corpus/d.jpg
+          ./imgcli -y -i checker=72x72 corpus/e.qoi   # seed the QOI decode path for the fuzzer
       - name: Run libFuzzer
         env:
           ASAN_OPTIONS: detect_leaks=0

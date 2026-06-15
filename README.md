@@ -1,7 +1,7 @@
 # imgcli — command-line image conversion & processing in C
 
 **A dependency-free CLI to convert, resize, crop, filter, and composite images** —
-PNG, JPEG, BMP, TGA, GIF, and PPM — driven by an ffmpeg-style filtergraph. One
+PNG, JPEG, BMP, TGA, GIF, PPM, and QOI — driven by an ffmpeg-style filtergraph. One
 small C binary, no system libraries, compiles anywhere a C11 compiler exists.
 
 > If you're looking for a lightweight **image converter / image processing
@@ -27,12 +27,12 @@ format (RGBA) → run a comma-separated filtergraph → encode by output extensi
 
 The **default build is dependency-free** — a single binary that links only the
 system C library (`libc`). Decoding/encoding is handled by the bundled,
-public-domain [stb](https://github.com/nothings/stb) single-header libraries,
-compiled directly in. Nothing to `apt install`, no shared libraries, no version
-hell.
+public-domain [stb](https://github.com/nothings/stb) and
+[qoi](https://github.com/phoboslab/qoi) single-header libraries, compiled
+directly in. Nothing to `apt install`, no shared libraries, no version hell.
 
-- **Built-in formats — no dependencies:** PNG, JPEG, BMP, TGA, GIF, PPM. Future
-  formats that can be implemented in plain C (e.g. TIFF, QOI) will also be built
+- **Built-in formats — no dependencies:** PNG, JPEG, BMP, TGA, GIF, PPM, QOI.
+  Other formats that can be implemented in plain C (e.g. TIFF) will also be built
   in and keep the binary dependency-free.
 - **Formats that need external libraries — opt-in only:** **WebP, AVIF, and HEIC**
   cannot be decoded without large external libraries (libwebp, libavif, libheif);
@@ -202,5 +202,5 @@ If imgcli is useful to you, consider [sponsoring its development](https://github
 
 ## License
 
-The imgcli source is yours to use freely. The vendored stb headers are
-public domain (see their headers).
+The imgcli source is yours to use freely (MIT). The vendored stb headers are
+public domain and the vendored `qoi.h` is MIT-licensed (see their headers).

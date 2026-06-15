@@ -106,11 +106,17 @@ CVE-2026-5186 UAF report). Hardening budget is spent accordingly.
 
 ## Dependency policy (the most important ongoing control)
 
-imgcli vendors `third_party/stb_image.h` **v2.30** and
-`third_party/stb_image_write.h` **v1.16** (public domain). Because these are the
-real attack surface:
+imgcli vendors `third_party/stb_image.h` **v2.30**,
+`third_party/stb_image_write.h` **v1.16** (public domain), and
+`third_party/qoi.h` (MIT) for the QOI codec. Because these are the real attack
+surface:
 
-- Watch [nothings/stb](https://github.com/nothings/stb) for security fixes.
+- Watch [nothings/stb](https://github.com/nothings/stb) and
+  [phoboslab/qoi](https://github.com/phoboslab/qoi) for security fixes.
+- The QOI decoder receives the same defense-in-depth as the stb path: the header
+  dimensions are validated against the safety caps **before** `qoi_decode`
+  allocates pixel memory (decompression-bomb guard), and the result is
+  bounds-checked again after decode.
 - Update deliberately, re-run `make asan` + `make fuzz`, and note the version
   bump in the changelog.
 - Only the needed formats are compiled in; unused decoders can be removed with

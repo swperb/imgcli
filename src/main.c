@@ -47,7 +47,7 @@ static void usage(FILE *f) {
         "  -V, --version  print version and exit\n"
         "  -h, --help   show this help\n"
         "\n"
-        "Output formats (by extension): png jpg jpeg bmp tga ppm\n"
+        "Output formats (by extension): png jpg jpeg bmp tga ppm qoi\n"
         "\n"
         "Examples:\n"
         "  imgcli -i photo.jpg -vf \"scale=1024:-1\" thumb.png\n"
@@ -66,6 +66,7 @@ static const char *out_format(const char *path) {
     if (!strcasecmp(dot, "bmp")) return "bmp";
     if (!strcasecmp(dot, "tga")) return "tga";
     if (!strcasecmp(dot, "ppm")) return "ppm";
+    if (!strcasecmp(dot, "qoi")) return "qoi";
     return "unknown";
 }
 

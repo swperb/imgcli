@@ -41,6 +41,7 @@ static void usage(FILE *f) {
         "  -n           never overwrite OUTPUT\n"
         "  --json       emit a single machine-readable JSON result line\n"
         "  --quiet      suppress the human-readable success line\n"
+        "  --dry-run    validate the filtergraph and report output dims; write nothing\n"
         "  -filters     list available filters and exit\n"
         "  -info        print info about each input and exit\n"
         "  -V, --version  print version and exit\n"
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
     const char *output = NULL;
     int quality = 90;
     int overwrite = -1;        /* -1 ask/refuse, 1 = -y, 0 = -n */
-    int want_filters = 0, want_info = 0, json = 0, quiet = 0;
+    int want_filters = 0, want_info = 0, json = 0, quiet = 0, dry_run = 0;
     char msg[512];
 
     for (int i = 1; i < argc; i++) {
@@ -97,6 +98,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(arg, "-info")) want_info = 1;
         else if (!strcmp(arg, "--json")) json = 1;
         else if (!strcmp(arg, "--quiet")) quiet = 1;
+        else if (!strcmp(arg, "--dry-run")) dry_run = 1;
         else if (!strcmp(arg, "-y")) overwrite = 1;
         else if (!strcmp(arg, "-n")) overwrite = 0;
         else if (!strcmp(arg, "-i")) {
@@ -165,10 +167,10 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!output) { emit_error(json, "no output file given; try -h for help"); goto cleanup; }
+    if (!output && !dry_run) { emit_error(json, "no output file given; try -h for help"); goto cleanup; }
 
-    /* Overwrite policy (never prompts - deterministic for scripts/agents). */
-    if (access(output, F_OK) == 0) {
+    /* Overwrite policy (never prompts; skipped in --dry-run, which writes nothing). */
+    if (!dry_run && access(output, F_OK) == 0) {
         if (overwrite == 0) {
             snprintf(msg, sizeof msg, "'%s' exists and -n was given", output);
             emit_error(json, msg); goto cleanup;
@@ -187,6 +189,23 @@ int main(int argc, char **argv) {
         snprintf(msg, sizeof msg, "filtergraph error: %s", err ? err : "unknown");
         emit_error(json, msg);
         free(err);
+        goto cleanup;
+    }
+
+    /* --dry-run: the graph parsed and ran; report the output dimensions and stop
+     * before encoding/writing anything. */
+    if (dry_run) {
+        const char *fmt = output ? out_format(output) : "n/a";
+        if (json) {
+            printf("{\"ok\":true,\"dry_run\":true,\"width\":%d,\"height\":%d,\"format\":\"%s\"}\n",
+                   result->w, result->h, fmt);
+        } else if (!quiet) {
+            printf("imgcli: dry-run OK — %dx%d", result->w, result->h);
+            if (output) printf(" (%s)", fmt);
+            printf("\n");
+        }
+        img_free(result);
+        rc = 0;
         goto cleanup;
     }
 

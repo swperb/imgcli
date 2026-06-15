@@ -32,6 +32,10 @@ Success (stdout, exit 0):
 ```json
 {"ok":true,"inputs":[{"path":"in.jpg","width":4000,"height":3000,"channels":4}]}
 ```
+`--dry-run --json` — validate a graph + get output dims without writing (stdout, exit 0):
+```json
+{"ok":true,"dry_run":true,"width":512,"height":341,"format":"png"}
+```
 Error (stderr, exit ≠ 0):
 ```json
 {"ok":false,"error":"cannot open input 'x.png': ..."}
@@ -60,6 +64,7 @@ Error (stderr, exit ≠ 0):
 | Blur | `imgcli -y -i in.jpg -vf "gblur=3" out.png` |
 | Overlay a logo at 20,20 | `imgcli -y -i bg.png -i logo.png -vf "overlay=20:20" out.png` |
 | Probe dimensions only | `imgcli --json -info -i in.jpg` |
+| Validate a filtergraph (write nothing) | `imgcli --json --dry-run -i in.jpg -vf "scale=512:-1,grayscale"` |
 | Chain several ops | `imgcli -y -i in.jpg -vf "scale=1024:-1,grayscale,contrast=1.2,gblur=1" out.png` |
 
 Get the authoritative, current filter list (29 filters, all chainable):

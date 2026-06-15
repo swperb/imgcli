@@ -28,20 +28,6 @@
       }
     }
   },
-  "tools": [
-    {
-      "name": "convert_image",
-      "description": "Convert, resize, crop, rotate, filter, or composite an image (output format from the file extension; optional ffmpeg-style filtergraph)."
-    },
-    {
-      "name": "probe_image",
-      "description": "Return an image's width, height, and channel count without converting it."
-    },
-    {
-      "name": "list_filters",
-      "description": "List the full imgcli filter catalogue."
-    }
-  ],
   "user_config": {
     "imgcli_bin": {
       "type": "string",

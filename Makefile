@@ -70,6 +70,8 @@ fuzz-replay: fuzz/fuzz_decode.c $(filter-out src/main.c,$(SRC))
 check: $(BIN)
 	./$(BIN) -y -i testsrc=64x64 /tmp/imgcli_check.png
 	./$(BIN) --json -y -i /tmp/imgcli_check.png -vf "scale=32:-1,grayscale,edge" /tmp/imgcli_check2.png
+	./$(BIN) --json -y -i /tmp/imgcli_check.png /tmp/imgcli_check.qoi
+	./$(BIN) --json -y -i /tmp/imgcli_check.qoi /tmp/imgcli_check_qoi.png
 	./$(BIN) --json --dry-run -i testsrc=64x64 -vf "scale=32:-1,rotate=15"
 	@command -v python3 >/dev/null && ./$(BIN) -filters --json | python3 -m json.tool >/dev/null && echo "  -filters --json: valid" || echo "  (skipped -filters --json validation: no python3)"
 	@echo "check: OK"

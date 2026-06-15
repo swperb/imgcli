@@ -9,7 +9,7 @@ and emits machine-readable JSON.
 ```
 imgcli [-i INPUT]... [-vf "FILTER,FILTER,..."] [-q N] -y [--json] OUTPUT
 ```
-Output format = OUTPUT's extension (png, jpg, bmp, tga, ppm). Filters run left→right.
+Output format = OUTPUT's extension (png, jpg, bmp, tga, ppm, qoi). Filters run left→right.
 
 ## Always do this in automation
 

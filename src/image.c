@@ -17,6 +17,11 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../third_party/stb_image_write.h"
 
+/* QOI codec (the "Quite OK Image" format) - vendored single-header, public
+ * domain. QOI is 8-bit RGB/RGBA, so it maps 1:1 onto our packed RGBA8 frame. */
+#define QOI_IMPLEMENTATION
+#include "../third_party/qoi.h"
+
 static char *dupstr(const char *s) {
     if (!s) s = "";
     char *d = (char *)malloc(strlen(s) + 1);
@@ -79,7 +84,58 @@ static Image *wrap_decoded(unsigned char *data, int w, int h, char **err) {
     return im;
 }
 
+/* Decode a QOI image from memory. Parses the header dimensions and rejects
+ * oversized images BEFORE qoi_decode allocates pixel memory (bomb guard). */
+static Image *qoi_decode_mem(const unsigned char *buf, int len, char **err) {
+    if (len < 14) { if (err) *err = dupstr("QOI: truncated header"); return NULL; }
+    /* header: magic[4], width (BE u32 @4), height (BE u32 @8), channels, colorspace */
+    long w = ((long)buf[4] << 24) | ((long)buf[5] << 16) | ((long)buf[6] << 8) | buf[7];
+    long h = ((long)buf[8] << 24) | ((long)buf[9] << 16) | ((long)buf[10] << 8) | buf[11];
+    if (!img_dims_ok(w, h)) {
+        if (err) *err = dupstr("image dimensions exceed safety limit (see SECURITY.md)");
+        return NULL;
+    }
+    qoi_desc desc;
+    void *px = qoi_decode(buf, len, &desc, 4);   /* force 4-channel RGBA output */
+    if (!px) { if (err) *err = dupstr("QOI decode failed"); return NULL; }
+    if (!img_dims_ok(desc.width, desc.height)) { /* belt and suspenders */
+        free(px);
+        if (err) *err = dupstr("image dimensions exceed safety limit");
+        return NULL;
+    }
+    Image *im = (Image *)malloc(sizeof *im);
+    if (!im) { free(px); if (err) *err = dupstr("out of memory"); return NULL; }
+    im->w = (int)desc.width;
+    im->h = (int)desc.height;
+    im->px = (unsigned char *)px;   /* QOI_MALLOC is malloc, so img_free() is safe */
+    return im;
+}
+
 Image *img_load(const char *path, char **err) {
+    /* QOI isn't an stb format - detect it by magic and decode from memory. */
+    FILE *qf = fopen(path, "rb");
+    if (qf) {
+        unsigned char magic[4];
+        int is_qoi = fread(magic, 1, 4, qf) == 4 && memcmp(magic, "qoif", 4) == 0;
+        if (is_qoi) {
+            fseek(qf, 0, SEEK_END);
+            long sz = ftell(qf);
+            fseek(qf, 0, SEEK_SET);
+            Image *im = NULL;
+            /* A valid QOI within our dim cap can't exceed ~5 bytes/pixel + header. */
+            if (sz > 0 && (size_t)sz <= (size_t)IMG_MAX_PIXELS * 5 + 1024) {
+                unsigned char *fb = (unsigned char *)malloc((size_t)sz);
+                if (fb && fread(fb, 1, (size_t)sz, qf) == (size_t)sz)
+                    im = qoi_decode_mem(fb, (int)sz, err);
+                else if (err) *err = dupstr("cannot read file");
+                free(fb);
+            } else if (err) *err = dupstr("QOI file too large");
+            fclose(qf);
+            return im;
+        }
+        fclose(qf);
+    }
+
     int w, h, n;
     /* Header-only read first: learn the dimensions WITHOUT decoding pixels, so a
      * decompression bomb (small file claiming huge size) is rejected before any
@@ -100,6 +156,8 @@ Image *img_load(const char *path, char **err) {
 Image *img_load_mem(const unsigned char *buf, int len, char **err) {
     int w, h, n;
     if (!buf || len <= 0) { if (err) *err = dupstr("empty input"); return NULL; }
+    if (len >= 4 && memcmp(buf, "qoif", 4) == 0)
+        return qoi_decode_mem(buf, len, err);
     if (!stbi_info_from_memory(buf, len, &w, &h, &n)) {
         if (err) { const char *r = stbi_failure_reason(); *err = dupstr(r ? r : "decode failed"); }
         return NULL;
@@ -166,8 +224,11 @@ int img_save(const char *path, const Image *im, int jpeg_quality, char **err) {
         ok = stbi_write_tga(path, im->w, im->h, 4, im->px);
     } else if (!strcmp(ext, "ppm")) {
         ok = write_ppm(path, im);
+    } else if (!strcmp(ext, "qoi")) {
+        qoi_desc desc = { (unsigned)im->w, (unsigned)im->h, 4, QOI_SRGB };
+        ok = qoi_write(path, im->px, &desc) != 0;  /* returns bytes written, 0 on error */
     } else {
-        if (err) *err = dupstr(ext[0] ? "unsupported output extension (use png/jpg/bmp/tga/ppm)"
+        if (err) *err = dupstr(ext[0] ? "unsupported output extension (use png/jpg/bmp/tga/ppm/qoi)"
                                        : "output has no extension");
         return 0;
     }

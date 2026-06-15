@@ -1,7 +1,7 @@
 # imgcli
 
 > A dependency-free command-line tool to convert, resize, crop, filter, and
-> composite still images (PNG/JPEG/BMP/TGA/GIF/PPM) via an ffmpeg-style
+> composite still images (PNG/JPEG/BMP/TGA/GIF/PPM/QOI) via an ffmpeg-style
 > filtergraph. One small C binary, no system libraries. Deterministic,
 > non-interactive, with `--json` output designed for agents and scripts.
 

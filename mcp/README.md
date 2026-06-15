@@ -84,11 +84,15 @@ The bundle ships the stdio server plus its production `node_modules` and
 (`brew install swperb/tap/imgcli`) and is configured via the `imgcli_bin` field
 the host prompts for (defaults to `imgcli` on `PATH`).
 
-> **Note:** `manifest.json` deliberately omits a `tools` list. `mcpb pack`
-> forbids per-tool `inputSchema` while Smithery's publish requires it, so
-> declaring tools fails the publish ([smithery-ai/cli#787](https://github.com/smithery-ai/cli/issues/787)).
-> The tools are discovered via introspection at runtime; re-add the block once
-> that issue is resolved.
+> **Note — tool schemas & [smithery-ai/cli#787](https://github.com/smithery-ai/cli/issues/787):**
+> `manifest.json` keeps no `tools` list because MCPB v0.3 forbids a per-tool
+> `inputSchema` (`mcpb pack` rejects it) while Smithery's registry *requires*
+> one. So `build-bundle.sh` **injects** the tool schemas and zips the bundle
+> directly (Smithery's bundle reader accepts them) — that's what populates the
+> listing's capabilities. The resulting `.mcpb` is intentionally non-conformant
+> MCPB, which only matters for a direct install into a strict host (this artifact
+> is Smithery-only). `MCPB_STRICT=1 ./build-bundle.sh` produces a conformant
+> bundle instead (no tools). Remove the injection once #787 ships.
 
 > The repo's [`Dockerfile`](../Dockerfile) + [`smithery.yaml`](../smithery.yaml)
 > (`runtime: container`, Streamable HTTP) also support a *hosted* container

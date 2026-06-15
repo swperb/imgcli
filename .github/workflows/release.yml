@@ -8,7 +8,21 @@ permissions:
   contents: write
 
 jobs:
+  # Create the release exactly once, so the parallel build jobs don't race to
+  # create it (which previously failed the second job with "tag already exists").
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release (idempotent)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" \
+            --generate-notes --verify-tag || gh release view "$GITHUB_REF_NAME"
+
   build:
+    needs: create-release
     name: build ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -30,12 +44,10 @@ jobs:
           mkdir -p "dist/imgcli"
           cp imgcli README.md LICENSE SECURITY.md AGENTS.md llms.txt "dist/imgcli/"
           tar -C dist -czf "${{ matrix.asset }}.tar.gz" imgcli
-          shasum -a 256 "${{ matrix.asset }}.tar.gz" | tee "${{ matrix.asset }}.tar.gz.sha256"
-      - name: Upload to release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            ${{ matrix.asset }}.tar.gz
-            ${{ matrix.asset }}.tar.gz.sha256
-          generate_release_notes: true
-          fail_on_unmatched_files: true
+          shasum -a 256 "${{ matrix.asset }}.tar.gz" > "${{ matrix.asset }}.tar.gz.sha256"
+      - name: Upload assets to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            "${{ matrix.asset }}.tar.gz" "${{ matrix.asset }}.tar.gz.sha256" --clobber

@@ -84,6 +84,11 @@ yay -S imgcli            # or: paru -S imgcli
 # Docker
 docker run --rm -v "$PWD:/work" -w /work ghcr.io/swperb/imgcli -y -i in.png out.jpg
 
+# Windows — winget
+winget install swperb.imgcli
+# Windows — Scoop (installs straight from the manifest)
+scoop install https://raw.githubusercontent.com/swperb/imgcli/main/packaging/scoop/imgcli.json
+
 # Prebuilt binaries: https://github.com/swperb/imgcli/releases
 
 # From source (only a C compiler and -lm required)

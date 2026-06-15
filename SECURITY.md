@@ -116,6 +116,15 @@ real attack surface:
 - Only the needed formats are compiled in; unused decoders can be removed with
   `STBI_NO_*` defines to further shrink the surface.
 
+**Default build = zero third-party dependencies** (links only `libc`); the
+vendored stb headers are compiled in, not linked. Formats that cannot be handled
+without an external library — **WebP, AVIF, HEIC** — are supported (if at all)
+only behind **opt-in build flags** (e.g. `make WEBP=1`) that link libwebp /
+libavif / libheif. Those libraries are **never** part of the default binary, so
+the default build's dependency-free and attack-surface guarantees are unchanged.
+Enabling an opt-in flag adds that library to your trust/attack surface — review
+and update it like any other dependency.
+
 ## Residual risk & honesty
 
 - **C is memory-unsafe.** Per NSA/CISA guidance, memory-safe languages eliminate

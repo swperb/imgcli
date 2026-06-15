@@ -3,21 +3,51 @@
   "version": "0.3.0",
   "mcpName": "io.github.swperb/imgcli",
   "description": "MCP server exposing imgcli — convert, resize, crop, filter & composite images as native agent tools (stdio + streamable HTTP)",
-  "keywords": ["mcp", "model-context-protocol", "image", "image-conversion", "imgcli", "resize", "convert", "ffmpeg", "imagemagick", "agent", "tool", "smithery"],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "image",
+    "image-conversion",
+    "imgcli",
+    "resize",
+    "convert",
+    "ffmpeg",
+    "imagemagick",
+    "agent",
+    "tool",
+    "smithery"
+  ],
   "homepage": "https://github.com/swperb/imgcli/tree/main/mcp",
-  "repository": { "type": "git", "url": "git+https://github.com/swperb/imgcli.git", "directory": "mcp" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swperb/imgcli.git",
+    "directory": "mcp"
+  },
   "license": "MIT",
   "author": "swperb",
-  "bugs": { "url": "https://github.com/swperb/imgcli/issues" },
-  "publishConfig": { "access": "public" },
+  "bugs": {
+    "url": "https://github.com/swperb/imgcli/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
-  "bin": { "imgcli-mcp": "dist/index.js" },
-  "files": ["dist", "README.md", "server.json"],
-  "engines": { "node": ">=18" },
+  "bin": {
+    "imgcli-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "server.json"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "bundle": "./build-bundle.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.0",

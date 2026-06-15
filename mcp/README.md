@@ -64,8 +64,30 @@ Or point `command` at `node` and `args` at the built `dist/index.js` for a local
 // -> {"ok":true,"inputs":[{"path":"photo.jpg","width":4000,"height":3000,"channels":4}]}
 ```
 
-## Registry
+## Publishing
 
-`server.json` is an [MCP registry](https://registry.modelcontextprotocol.io)
-manifest. Publishing requires releasing `imgcli-mcp` to npm and running the
-registry's `mcp-publisher` flow.
+Two stages — **npm first**, then the **MCP registry** (the registry verifies the
+npm package's `mcpName` field against the server `name`).
+
+```sh
+# 1. Publish to npm (needs `npm login`). Package is public via publishConfig.
+cd mcp
+npm publish
+
+# 2. Publish metadata to the MCP registry
+brew install mcp-publisher          # (or download from the registry's GitHub releases)
+mcp-publisher login github          # device-flow auth as the io.github.swperb owner
+mcp-publisher validate              # optional: check server.json
+mcp-publisher publish               # publishes server.json
+
+# verify
+curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.swperb/imgcli"
+```
+
+Ownership is proven by `mcpName` in `package.json` matching `name` in
+`server.json` (`io.github.swperb/imgcli`). On every release keep three versions
+in sync: `package.json` `version`, `server.json` `version`, and the
+`server.json` `packages[].version`.
+
+> The MCP registry is in preview; data resets can occur, so be ready to
+> re-publish. There is no self-service unpublish — publish a new version to update.

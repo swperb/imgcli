@@ -7,6 +7,12 @@
 # npm install. The imgcli C binary is NOT bundled (it is platform-specific) — it
 # stays a prerequisite (brew install swperb/tap/imgcli) configured via IMGCLI_BIN.
 #
+# TODO: manifest.json intentionally omits a `tools` array. `mcpb pack` forbids
+# per-tool `inputSchema`, but `smithery mcp publish` requires it, so declaring
+# tools fails the Smithery publish with 400 "expected object, received undefined"
+# (one per tool). Tracked upstream: https://github.com/smithery-ai/cli/issues/787
+# Once that's fixed, re-add the tools block to manifest.json for a richer listing.
+#
 # Usage: cd mcp && ./build-bundle.sh   ->  mcp/imgcli-mcp.mcpb
 set -euo pipefail
 

@@ -27,6 +27,7 @@ npm run build >/dev/null
 echo "==> staging a production-only tree"
 cp -R dist "$STAGE/dist"
 cp manifest.json package.json README.md "$STAGE/"
+cp ../docs/img/icon.png "$STAGE/icon.png"      # bundle icon (referenced by manifest)
 ( cd "$STAGE" && npm install --omit=dev --ignore-scripts --no-audit --no-fund --silent )
 
 echo "==> packing the bundle"

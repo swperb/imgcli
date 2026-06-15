@@ -64,8 +64,11 @@ Error (stderr, exit ≠ 0):
 
 Get the authoritative, current filter list (29 filters, all chainable):
 ```sh
-imgcli -filters
+imgcli -filters           # human-readable
+imgcli -filters --json    # machine-readable: [{"name","syntax","description"}, ...]
 ```
+Use `-filters --json` to enumerate or validate available filters programmatically —
+it's generated from the binary itself, so it's always in sync with your version.
 
 ## Notes for reliable use
 

@@ -609,6 +609,33 @@ void filters_print_list(void) {
         printf("  %s\n", FILTERS[i].usage);
 }
 
+/* Split a usage string ("<syntax>   <description>") on the first run of 2+
+ * spaces: copies the syntax into `syntax`, points `*desc` at the description. */
+static void split_usage(const char *usage, char *syntax, size_t sz, const char **desc) {
+    size_t i = 0, n = 0;
+    while (usage[i] && !(usage[i] == ' ' && usage[i + 1] == ' ')) {
+        if (n + 1 < sz) syntax[n++] = usage[i];
+        i++;
+    }
+    syntax[n] = '\0';
+    while (usage[i] == ' ') i++;          /* skip the padding run */
+    *desc = usage + i;                    /* remainder is the description */
+}
+
+void filters_print_json(void) {
+    printf("[\n");
+    for (int i = 0; i < NFILTERS; i++) {
+        char syntax[128];
+        const char *desc;
+        split_usage(FILTERS[i].usage, syntax, sizeof syntax, &desc);
+        fputs("  {\"name\":", stdout);        json_str(stdout, FILTERS[i].name);
+        fputs(",\"syntax\":", stdout);        json_str(stdout, syntax);
+        fputs(",\"description\":", stdout);   json_str(stdout, desc);
+        printf("}%s\n", i + 1 < NFILTERS ? "," : "");
+    }
+    printf("]\n");
+}
+
 /* trim leading/trailing ascii whitespace in place, returns start */
 static char *trim(char *s) {
     while (*s && isspace((unsigned char)*s)) s++;

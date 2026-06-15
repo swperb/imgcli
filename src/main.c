@@ -13,6 +13,7 @@
 #include "filters.h"
 #include "image.h"
 #include "source.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,25 +53,6 @@ static void usage(FILE *f) {
         "  imgcli -i photo.jpg -vf \"grayscale,contrast=1.2,gblur=1.5\" out.jpg\n"
         "  imgcli -i bg.png -i logo.png -vf \"overlay=20:20\" out.png\n"
         "  imgcli --json -y -i in.png -vf \"scale=256:-1\" out.png\n");
-}
-
-/* Print s as a JSON string literal (quoted, with the required escapes). */
-static void json_str(FILE *f, const char *s) {
-    fputc('"', f);
-    for (; s && *s; s++) {
-        unsigned char c = (unsigned char)*s;
-        switch (c) {
-            case '"':  fputs("\\\"", f); break;
-            case '\\': fputs("\\\\", f); break;
-            case '\n': fputs("\\n", f);  break;
-            case '\r': fputs("\\r", f);  break;
-            case '\t': fputs("\\t", f);  break;
-            default:
-                if (c < 0x20) fprintf(f, "\\u%04x", c);
-                else          fputc(c, f);
-        }
-    }
-    fputc('"', f);
 }
 
 /* Lowercased output format name derived from the file extension. */
@@ -145,7 +127,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (want_filters) { filters_print_list(); return 0; }
+    if (want_filters) { if (json) filters_print_json(); else filters_print_list(); return 0; }
 
     if (ninputs == 0) { emit_error(json, "no input (use -i); try -h for help"); return 2; }
 

@@ -1,0 +1,12 @@
+# Keep the build context lean and reproducible (everything is built inside).
+.git
+.github
+imgcli
+imgcli.asan
+imgcli-fuzz
+*.o
+*.dSYM
+mcp/node_modules
+mcp/dist
+demo_*.png
+demo_*.jpg

@@ -1,0 +1,40 @@
+name: Format support request
+description: Request read/write support for an image format
+title: "[format]: "
+labels: ["format", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Formats are added carefully to protect the zero-dependency wedge: those doable in plain C (e.g. TIFF, QOI) get built in; those needing big external libraries (WebP/AVIF/HEIC) are opt-in only. This helps sort which bucket yours is in.
+  - type: input
+    id: format
+    attributes:
+      label: Which format?
+      placeholder: "WebP / AVIF / TIFF / QOI / ..."
+    validations:
+      required: true
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Read, write, or both?
+      options: ["Read only", "Write only", "Both"]
+    validations:
+      required: true
+  - type: dropdown
+    id: decoder
+    attributes:
+      label: How can it be decoded/encoded?
+      options:
+        - "Plain C / permissive single-header codec exists (zero-dep possible)"
+        - "Needs a large external library (libwebp/libavif/...) — opt-in"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Use case + sample files
+      description: Where do these files come from? A small sample link helps a lot.
+    validations:
+      required: false

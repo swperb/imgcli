@@ -1,0 +1,16 @@
+# Drives the repository "Sponsor" button. Activating a new platform is one line.
+# Docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github: [swperb]               # GitHub Sponsors — enroll at https://github.com/sponsors/swperb to activate
+
+# --- tip jars: uncomment one and fill in your username ---
+# ko_fi: your-kofi-username
+# buy_me_a_coffee: your-bmac-username
+
+# --- other supported platforms (uncomment + fill in as you add accounts) ---
+# patreon: your-patreon
+# open_collective: your-collective
+# liberapay: your-liberapay
+# polar: your-polar
+# thanks_dev: your-thanksdev
+# custom: ["https://your-donate-link"]

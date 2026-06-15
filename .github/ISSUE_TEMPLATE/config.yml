@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & general discussion
+    url: https://github.com/swperb/imgcli/discussions
+    about: Ask a question, share what you built, or float an idea before filing an issue.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/swperb/imgcli/security/advisories/new
+    about: Report vulnerabilities privately (see SECURITY.md). Please do not open a public issue.

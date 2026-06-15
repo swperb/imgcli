@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest a new filter, flag, or capability
+title: "[feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! imgcli stays small, fast, and dependency-free — the strongest requests respect that. Filling this out makes it easy to evaluate and pick up.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The use case — what you're trying to do, not just the feature.
+      placeholder: "I'm batch-processing product photos and need to ..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would the flag/filter/behavior look like? Show the command if you can.
+      placeholder: 'imgcli -i in.jpg -vf "newfilter=..." out.png'
+    validations:
+      required: true
+  - type: dropdown
+    id: zero-dep
+    attributes:
+      label: Does this fit the zero-dependency design?
+      description: imgcli's default build links only libc. Formats/codecs needing external libs are opt-in only (see README → "Dependencies & formats").
+      options:
+        - "Yes — pure C, no new dependencies"
+        - "Needs an external library (would be opt-in build flag)"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing filters/flags or other tools you tried first.
+    validations:
+      required: false

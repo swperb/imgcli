@@ -193,6 +193,12 @@ SECURITY.md        threat model, OWASP/CWE mapping, hardening, dependency policy
 
 Contributor setup, validation targets, filter-registry guidance, and PR expectations live in [CONTRIBUTING.md](CONTRIBUTING.md).
 
+Have a question or idea? Use [Discussions](https://github.com/swperb/imgcli/discussions). For bugs and feature/format requests, open an issue — the templates will guide you.
+
+## Support
+
+If imgcli is useful to you, consider [sponsoring its development](https://github.com/sponsors/swperb) — it funds new formats, security hardening, and maintenance. See [SPONSORS.md](SPONSORS.md).
+
 ## License
 
 The imgcli source is yours to use freely. The vendored stb headers are

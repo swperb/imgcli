@@ -1,0 +1,44 @@
+name: Bug report
+description: Something doesn't work as expected
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What went wrong, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Exact command to reproduce
+      description: The full command. A generator input (e.g. testsrc=320x240) makes it self-contained.
+      render: shell
+      placeholder: 'imgcli -i testsrc=320x240 -vf "scale=100:-1" out.png'
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `imgcli -V`
+      placeholder: "imgcli 0.2.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options: ["macOS", "Linux", "Windows", "Other"]
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output / error
+      description: Paste the terminal output (--json output is great if relevant).
+      render: shell
+    validations:
+      required: false

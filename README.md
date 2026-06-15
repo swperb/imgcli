@@ -23,6 +23,28 @@ convolution kernels · alpha-composite overlay · draw boxes · solid fills.
 **Design:** the same paradigm as ffmpeg — *decode → normalize to one common frame
 format (RGBA) → run a comma-separated filtergraph → encode by output extension.*
 
+## Dependencies & formats
+
+The **default build is dependency-free** — a single binary that links only the
+system C library (`libc`). Decoding/encoding is handled by the bundled,
+public-domain [stb](https://github.com/nothings/stb) single-header libraries,
+compiled directly in. Nothing to `apt install`, no shared libraries, no version
+hell.
+
+- **Built-in formats — no dependencies:** PNG, JPEG, BMP, TGA, GIF, PPM. Future
+  formats that can be implemented in plain C (e.g. TIFF, QOI) will also be built
+  in and keep the binary dependency-free.
+- **Formats that need external libraries — opt-in only:** **WebP, AVIF, and HEIC**
+  cannot be decoded without large external libraries (libwebp, libavif, libheif);
+  there is no public-domain single-header decoder for them and they are not
+  practical to hand-roll. If imgcli adds these, it will be **strictly via opt-in
+  build flags** (e.g. `make WEBP=1`) that link those libraries.
+
+> **The "zero dependencies" claim applies to the default build, and always will —
+> opt-in format libraries are never compiled into it.** A build that enables such
+> a flag is, by definition, no longer dependency-free, and that trade-off is
+> stated at the point you opt in.
+
 ## Why it's structured this way
 
 | ffmpeg concept        | imgcli equivalent                                            |

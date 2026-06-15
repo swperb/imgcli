@@ -6,10 +6,18 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns: ["*"]
 
   # Keep the MCP server's npm dependencies patched.
+  # Grouped into a single PR per cycle; patch/minor auto-merge once CI (incl.
+  # the mcp-build job) is green — see .github/workflows/dependabot-automerge.yml.
   - package-ecosystem: npm
     directory: "/mcp"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      mcp-dependencies:
+        patterns: ["*"]

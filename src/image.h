@@ -41,9 +41,18 @@ Image *img_load(const char *path, char **err);
 /* Decode from an in-memory buffer (used by the fuzz harness; same limits). */
 Image *img_load_mem(const unsigned char *buf, int len, char **err);
 
-/* Encode by file extension: png, jpg/jpeg, bmp, tga, ppm.
+/* Read all of stdin and decode it (for `-i -`). Same safety limits. */
+Image *img_load_stdin(char **err);
+
+/* Encode by file extension: png, jpg/jpeg, bmp, tga, ppm, qoi.
  * jpeg_quality is 1..100 (used only for jpg). Returns 1 on success. */
 int    img_save(const char *path, const Image *im, int jpeg_quality, char **err);
+
+/* Encode to `path`, choosing the format from `fmt` (png/jpg/jpeg/bmp/tga/ppm/qoi)
+ * if non-NULL, else from the file extension. `path` may be "-" for stdout, in
+ * which case `fmt` is required. *bytes_out (if non-NULL) gets the bytes written. */
+int    img_write(const char *path, const Image *im, const char *fmt,
+                 int jpeg_quality, long long *bytes_out, char **err);
 
 /* Bounds-checked pixel address (no clamping; caller guarantees range). */
 static inline unsigned char *img_at(const Image *im, int x, int y) {

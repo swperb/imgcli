@@ -7,9 +7,10 @@ and emits machine-readable JSON.
 ## One-line mental model
 
 ```
-imgcli [-i INPUT]... [-vf "FILTER,FILTER,..."] [-q N] -y [--json] OUTPUT
+imgcli [-i INPUT]... [-vf "FILTER,FILTER,..."] [-q N] [-f FMT] -y [--json] OUTPUT
 ```
-Output format = OUTPUT's extension (png, jpg, bmp, tga, ppm, qoi). Filters run left→right.
+Output format = OUTPUT's extension, or `-f FMT` (png, jpg, bmp, tga, ppm, qoi). Filters run left→right.
+INPUT and OUTPUT may be `-` for stdin/stdout (pipes); `-f` is required for stdout. When OUTPUT is `-`, the JSON/result line goes to **stderr** so stdout carries only the image bytes.
 
 ## Always do this in automation
 
@@ -66,6 +67,7 @@ Error (stderr, exit ≠ 0):
 | Probe dimensions only | `imgcli --json -info -i in.jpg` |
 | Validate a filtergraph (write nothing) | `imgcli --json --dry-run -i in.jpg -vf "scale=512:-1,grayscale"` |
 | Chain several ops | `imgcli -y -i in.jpg -vf "scale=1024:-1,grayscale,contrast=1.2,gblur=1" out.png` |
+| Pipe (stdin → stdout) | `… \| imgcli -i - -vf "scale=512:-1" -f png - > out.png` |
 
 Get the authoritative, current filter list (29 filters, all chainable):
 ```sh

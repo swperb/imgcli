@@ -50,6 +50,11 @@ jobs:
           ./imgcli.asan -y -i c.png -vf "scale=200:-1,crop=128:128,grayscale,gblur=3,sharpen,edge,emboss,rotate=33,convolution=0 -1 0 -1 5 -1 0 -1 0,sepia" o.png
           ./imgcli.asan -y -i c.png -i color=#00ff00aa:80x80 -vf "overlay=10:10,opacity=0.5,tint=red" o.tga
           ./imgcli.asan -y -i c.png o.qoi; ./imgcli.asan -y -i o.qoi -vf "scale=64:-1,grayscale" q.png  # QOI encode + decode
+          # stdin/stdout pipe paths (non-jpg: stb's jpeg encoder has a known benign signed-shift)
+          ./imgcli.asan -i c.png -f png - | ./imgcli.asan -i - -vf "scale=99:-1,grayscale,gblur=2,rotate=20" -f qoi - > piped.qoi
+          ./imgcli.asan -info -i piped.qoi
+          : | ./imgcli.asan -i - x.png || true                          # empty stdin
+          head -c 40 c.png | ./imgcli.asan -i - x.png || true           # truncated stdin
           # adversarial: oversize/limits, tiny frames, extreme rotate
           ./imgcli.asan -y -i "testsrc=99999x99999" x.png || true
           ./imgcli.asan -y -i c.png -vf "scale=20000:20000" x.png || true

@@ -30,7 +30,7 @@
 #define MKDIR(p) mkdir((p), 0755)
 #endif
 
-#define IMGCLI_VERSION "0.3.0"
+#define IMGCLI_VERSION "0.4.0"
 #define MAX_INPUTS 16
 
 static void usage(FILE *f) {

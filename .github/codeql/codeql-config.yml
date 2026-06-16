@@ -1,0 +1,8 @@
+name: imgcli CodeQL config
+
+# The vendored single-header codecs (third_party/stb_image*.h, qoi.h) are tracked
+# upstream, not our code to fix. Their internal allocations are already bounded
+# by imgcli's pre-decode dimension caps (stbi_info + IMG_MAX_DIM/PIXELS; see
+# SECURITY.md), so exclude them from analysis to keep CodeQL focused on src/.
+paths-ignore:
+  - third_party

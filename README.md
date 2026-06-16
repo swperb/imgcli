@@ -133,8 +133,8 @@ Colours accept `#rgb`, `#rrggbb`, `#rrggbbaa`, `0x…`, `r-g-b[-a]`, or names
 `crop=W:H[:X:Y]`, `pad=W:H[:X:Y[:color]]`, `hflip`, `vflip`,
 `transpose=90|180|270`, `rotate=DEG[:color]` (arbitrary angle, canvas expands).
 
-**Colour** — `grayscale`, `invert`, `sepia`, `brightness=V`, `contrast=V`,
-`saturation=V`, `gamma=V`, `hue=DEG`, `threshold=V`, `opacity=V`, `tint=color`.
+**Colour** — `grayscale`, `invert`, `sepia`, `brightness=V`, `temperature=V`,
+`contrast=V`, `saturation=V`, `gamma=V`, `hue=DEG`, `threshold=V`, `opacity=V`, `tint=color`.
 
 **Convolution** — `blur=R` (box), `gblur=SIGMA` (separable Gaussian),
 `sharpen[=AMOUNT]`, `edge` (Sobel), `emboss`, `convolution=K[:DIV:BIAS]`

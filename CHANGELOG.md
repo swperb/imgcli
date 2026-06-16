@@ -4,6 +4,26 @@ All notable changes to imgcli are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-06-16
+
+### Added
+- **Batch processing** — `--out-dir DIR` processes every input independently and
+  writes one output per input; `-i` patterns are glob-expanded. Per-file errors
+  are reported but don't abort the batch (`--fail-fast` to opt out), `--json`
+  emits a results array, and the exit code is non-zero if any file failed.
+- **stdin/stdout pipes** — `-i -` reads an image from stdin and `OUTPUT` `-`
+  writes encoded bytes to stdout, with `-f FMT` to name the format (required for
+  stdout). When piping, the result line goes to stderr so stdout stays clean.
+- **High-quality resampling** — `scale=W:H:bicubic` (Catmull-Rom) and
+  `scale=W:H:lanczos` (Lanczos-3), separable with edge-clamping and downscale
+  anti-aliasing. `bilinear` remains the default.
+
+### Changed / internal
+- **Integration test suite** (`make test`) — golden pixel output, format
+  round-trips, exit codes, and `--json` schema, run in CI on Linux and macOS.
+- Supply-chain hardening: Flawfinder C scan, CodeQL config (vendored code
+  excluded), and output files created `0644`. CodeQL: 0 open alerts.
+
 ## [0.3.0] - 2026-06-15
 
 ### Added
@@ -33,5 +53,6 @@ All notable changes to imgcli are documented here. The format follows
 - Security hardening: pre-decode dimension caps, overflow-safe allocation,
   compiler/linker hardening, ASan/UBSan + libFuzzer in CI.
 
+[0.4.0]: https://github.com/swperb/imgcli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/swperb/imgcli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/swperb/imgcli/releases/tag/v0.2.0

@@ -77,8 +77,8 @@ nix run github:swperb/imgcli -- -y -i in.png out.jpg
 nix profile install github:swperb/imgcli
 
 # Debian / Ubuntu / WSL (.deb from the latest release)
-curl -fsSLO https://github.com/swperb/imgcli/releases/latest/download/imgcli_0.3.0_amd64.deb
-sudo apt install ./imgcli_0.3.0_amd64.deb
+curl -fsSLO https://github.com/swperb/imgcli/releases/latest/download/imgcli_0.4.0_amd64.deb
+sudo apt install ./imgcli_0.4.0_amd64.deb
 
 # Arch (AUR)
 yay -S imgcli            # or: paru -S imgcli

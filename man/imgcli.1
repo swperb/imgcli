@@ -1,0 +1,198 @@
+.\" Manpage for imgcli.
+.\" Keep options in sync with `imgcli -h` and filters with `imgcli -filters`.
+.TH IMGCLI 1 "2026-06-15" "imgcli 0.5.0" "User Commands"
+.SH NAME
+imgcli \- ffmpeg-style image conversion and processing in C
+.SH SYNOPSIS
+.B imgcli
+.RB [ \-i
+.IR INPUT ]...
+.RB [ \-vf
+.IR GRAPH ]
+.RB [ \-q
+.IR N ]
+.RB [ \-f
+.IR FMT ]
+.RB [ \-y | \-n ]
+.RB [ \-\-json ]
+.I OUTPUT
+.SH DESCRIPTION
+.B imgcli
+is a small, dependency-free command-line tool that converts, resizes, crops,
+filters, and composites still images. It follows the same paradigm as
+.BR ffmpeg (1):
+decode the input, normalize it to a single common frame format (packed 8-bit
+RGBA), run a comma-separated filtergraph, then encode by the output extension.
+.PP
+The default build links only the system C library; image codecs are compiled in
+from the bundled public-domain stb and qoi single-header libraries. Built-in
+formats are PNG, JPEG, BMP, TGA, GIF, PPM, and QOI.
+.PP
+.I OUTPUT
+is a file path, or
+.B \-
+for standard output. When piping, the human-readable result line is written to
+standard error so standard output carries only the encoded image bytes.
+.SH OPTIONS
+.TP
+.BI \-i " INPUT"
+An input file,
+.B \-
+for standard input, or a generator
+.RB ( testsrc= WxH ,
+.BI color= NAME:WxH ,
+.BI gradient= WxH ,
+.BI checker= WxH ).
+Repeat
+.B \-i
+for compositing inputs: the first is the primary frame and the rest feed the
+.B overlay
+filter.
+.TP
+.BI \-vf " GRAPH"
+The filtergraph, e.g.
+.RB \(dq scale=800:-1,grayscale,gblur=2 \(dq.
+See
+.BR FILTERS .
+.TP
+.BI \-q " N"
+JPEG quality, 1..100 (default 90).
+.TP
+.BI \-f " FMT"
+Output format
+.RB ( png / jpg / bmp / tga / ppm / qoi ).
+Required when
+.I OUTPUT
+is
+.B \-
+(standard output); an optional override for files.
+.TP
+.B \-y
+Overwrite the output if it exists.
+.TP
+.B \-n
+Never overwrite the output.
+.TP
+.BI \-\-out\-dir " D"
+Batch mode: write one output per input into directory
+.IR D ,
+keeping each basename and taking the extension from
+.B \-f
+or the input. Globs in
+.B \-i
+are expanded.
+.TP
+.B \-\-fail\-fast
+In batch mode, stop at the first failing file instead of continuing.
+.TP
+.B \-\-json
+Emit one machine-readable JSON result line (an array in batch mode).
+.TP
+.B \-\-quiet
+Suppress the human-readable success line.
+.TP
+.B \-\-dry\-run
+Validate the filtergraph and report the output dimensions; write nothing.
+.TP
+.B \-filters
+List every filter. Add
+.B \-\-json
+for a machine-readable list.
+.TP
+.B \-info
+Print the input dimensions and exit.
+.TP
+.B \-V
+Print the version.
+.TP
+.B \-h
+Print help.
+.SH FILTERS
+Filters chain with commas, e.g.
+.RB \(dq scale=800:-1,grayscale,gblur=2 \(dq.
+Run
+.B imgcli \-filters
+for the authoritative list. Highlights:
+.TP
+.BI scale= W:H [: nearest | bilinear | bicubic | lanczos ]
+Resize; \-1 on a dimension keeps aspect ratio. bicubic/lanczos are
+higher-quality resamplers; bilinear is the default.
+.TP
+.BI crop= W:H [: X:Y ]
+Crop a region (centred by default).
+.TP
+.BI pad= W:H [: X:Y [: color ]]
+Letterbox onto a larger canvas.
+.TP
+.BR hflip ", " vflip ", " transpose= 90|180|270 ", " rotate= DEG [: color ]
+Mirror and rotate.
+.TP
+.BR grayscale ", " sepia ", " invert ", " brightness= V ", " contrast= V ", " saturation= V ", " gamma= V ", " hue= DEG ", " temperature= V ", " threshold= V
+Tone and colour adjustments.
+.TP
+.BR blur= R ", " gblur= SIGMA ", " sharpen [= AMOUNT ] ", " edge ", " emboss ", " convolution= K [: DIV:BIAS ]
+Convolution and edge filters.
+.TP
+.BI overlay= X:Y [: INDEX ]
+Alpha-composite an additional
+.B \-i
+input. See also
+.BR fill ", " drawbox .
+.SH EXAMPLES
+Convert, resize, and filter in one pass:
+.PP
+.RS
+.EX
+imgcli \-i photo.jpg \-vf "scale=1024:-1,grayscale,contrast=1.2,gblur=1.5" out.png
+.EE
+.RE
+.PP
+Make a thumbnail and write it as a high-quality WebP-free QOI:
+.PP
+.RS
+.EX
+imgcli \-i in.png \-vf "scale=256:-1:lanczos" thumb.qoi
+.EE
+.RE
+.PP
+Batch-resize a directory of JPEGs into PNG thumbnails:
+.PP
+.RS
+.EX
+imgcli \-i "shots/*.jpg" \-\-out\-dir thumbs \-vf "scale=400:-1" \-f png \-y
+.EE
+.RE
+.PP
+Pipe through stdin/stdout:
+.PP
+.RS
+.EX
+cat in.png | imgcli \-i \- \-vf grayscale \-f jpg \- > out.jpg
+.EE
+.RE
+.PP
+Probe an image as JSON without writing anything:
+.PP
+.RS
+.EX
+imgcli \-\-json \-info \-i photo.jpg
+.EE
+.RE
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+A runtime error (decode/encode failure, I/O error, or, in batch mode, at least
+one file failed).
+.TP
+.B 2
+A usage error (bad arguments or an invalid filtergraph).
+.SH SEE ALSO
+.BR ffmpeg (1),
+.BR convert (1)
+.PP
+Project home: https://github.com/swperb/imgcli
+.SH AUTHOR
+Stephen Proctor and contributors.

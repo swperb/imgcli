@@ -12,7 +12,7 @@
       packages = forAllSystems (pkgs: {
         default = pkgs.stdenv.mkDerivation {
           pname = "imgcli";
-          version = "0.4.0";
+          version = "0.5.0";
           src = ./.;
 
           # Zero third-party deps: links only the system C library + libm, both

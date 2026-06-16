@@ -4,6 +4,18 @@ All notable changes to imgcli are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-06-16
+
+### Added
+- **Man page** — a proper `imgcli.1` (and a `make install-man` target, also pulled
+  in by `make install`) so distro packagers get the `man imgcli` page they expect.
+
+### Documentation
+- README: sharpened the headline ("ImageMagick's power, ffmpeg's syntax, zero
+  dependencies"), surfaced the benchmark numbers (~8× faster resize/filter, 232 KB
+  vs ~109 MB) in a Benchmarks section near the top, and noted that AVIF/JPEG XL
+  decoding stays out of the dependency-free default by design.
+
 ## [0.4.0] - 2026-06-16
 
 ### Added
@@ -53,6 +65,7 @@ All notable changes to imgcli are documented here. The format follows
 - Security hardening: pre-decode dimension caps, overflow-safe allocation,
   compiler/linker hardening, ASan/UBSan + libFuzzer in CI.
 
+[0.5.0]: https://github.com/swperb/imgcli/releases/tag/v0.5.0
 [0.4.0]: https://github.com/swperb/imgcli/releases/tag/v0.4.0
 [0.3.0]: https://github.com/swperb/imgcli/releases/tag/v0.3.0
 [0.2.0]: https://github.com/swperb/imgcli/releases/tag/v0.2.0

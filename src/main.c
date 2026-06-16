@@ -147,6 +147,8 @@ static int run_batch(const char **patterns, int npat, const char *graph, const c
         if (slen >= sizeof outpath / 2) slen = sizeof outpath / 2;
         snprintf(outpath, sizeof outpath, "%s/%.*s.%s", out_dir, (int)slen, base, ext);
 
+        /* Flawfinder: ignore — best-effort "exists?" guard on the user's own
+         * output path; no privilege boundary, so the TOCTOU is benign. */
         if (overwrite != 1 && access(outpath, F_OK) == 0) {
             why = overwrite == 0 ? "output exists and -n was given" : "output exists; pass -y to overwrite";
             goto record;
@@ -307,6 +309,8 @@ int main(int argc, char **argv) {
     }
 
     /* Overwrite policy (never prompts; skipped in --dry-run and for stdout). */
+    /* Flawfinder: ignore — best-effort "exists?" guard on the user's own output
+     * path; no privilege boundary, so the TOCTOU is benign. */
     if (!dry_run && !to_stdout && access(output, F_OK) == 0) {
         if (overwrite == 0) {
             snprintf(msg, sizeof msg, "'%s' exists and -n was given", output);

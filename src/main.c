@@ -22,8 +22,12 @@
 #include <strings.h>     /* strcasecmp */
 #include <sys/stat.h>
 #include <unistd.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#include <direct.h>      /* _mkdir */
+#define MKDIR(p) _mkdir(p)
+#else
 #include <glob.h>        /* batch input expansion (POSIX) */
+#define MKDIR(p) mkdir((p), 0755)
 #endif
 
 #define IMGCLI_VERSION "0.3.0"
@@ -99,7 +103,7 @@ static void emit_error(int json, const char *msg) {
 static int run_batch(const char **patterns, int npat, const char *graph, const char *format,
                      const char *out_dir, int quality, int overwrite, int json, int quiet, int fail_fast) {
     char m[1024];
-    if (mkdir(out_dir, 0755) != 0 && errno != EEXIST) {
+    if (MKDIR(out_dir) != 0 && errno != EEXIST) {
         snprintf(m, sizeof m, "cannot create --out-dir '%s'", out_dir);
         emit_error(json, m); return 2;
     }

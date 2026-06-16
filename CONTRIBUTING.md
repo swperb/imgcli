@@ -28,6 +28,9 @@ make check
 Before opening a PR, run the checks that match your change:
 
 - `make check` for every change.
+- `make test` — the integration suite (golden pixel output, format round-trips,
+  exit codes, `--json` schema). If a change intentionally alters output, refresh
+  the references with `make test-update` and commit the updated `tests/golden/`.
 - `make asan` if you touched image parsing, filter execution, buffer sizing, or other memory-sensitive code.
 - `make fuzz CC=clang` if you changed decode or filtergraph behavior and have a libFuzzer-capable `clang`.
 

@@ -37,6 +37,10 @@ Success (stdout, exit 0):
 ```json
 {"ok":true,"dry_run":true,"width":512,"height":341,"format":"png"}
 ```
+`--out-dir … --json` — batch; one result per input, exit ≠ 0 if any failed:
+```json
+{"ok":true,"batch":true,"results":[{"input":"a.jpg","output":"out/a.png","ok":true,"width":400,"height":300,"bytes":34122},{"input":"bad.png","ok":false,"error":"…"}],"processed":2,"failed":1}
+```
 Error (stderr, exit ≠ 0):
 ```json
 {"ok":false,"error":"cannot open input 'x.png': ..."}
@@ -68,6 +72,7 @@ Error (stderr, exit ≠ 0):
 | Validate a filtergraph (write nothing) | `imgcli --json --dry-run -i in.jpg -vf "scale=512:-1,grayscale"` |
 | Chain several ops | `imgcli -y -i in.jpg -vf "scale=1024:-1,grayscale,contrast=1.2,gblur=1" out.png` |
 | Pipe (stdin → stdout) | `… \| imgcli -i - -vf "scale=512:-1" -f png - > out.png` |
+| Batch a folder | `imgcli --json -i "in/*.jpg" --out-dir out -vf "scale=400:-1:lanczos" -f png` |
 
 Get the authoritative, current filter list (29 filters, all chainable):
 ```sh

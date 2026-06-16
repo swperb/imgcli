@@ -77,6 +77,10 @@ check: $(BIN)
 	./$(BIN) --json -y -i testsrc=400x400 -vf "scale=64:64:lanczos" /tmp/imgcli_lanczos.png
 	./$(BIN) -i testsrc=64x64 -f png - | ./$(BIN) -i - -vf "scale=32:-1,grayscale" -f qoi - > /tmp/imgcli_pipe.qoi
 	@test -s /tmp/imgcli_pipe.qoi && ./$(BIN) --json -info -i /tmp/imgcli_pipe.qoi >/dev/null && echo "  stdin/stdout pipe: OK"
+	@rm -rf /tmp/imgcli_bin /tmp/imgcli_out && mkdir -p /tmp/imgcli_bin
+	@./$(BIN) -y -i testsrc=40x40 /tmp/imgcli_bin/a.png >/dev/null && ./$(BIN) -y -i gradient=30x30 /tmp/imgcli_bin/b.png >/dev/null
+	./$(BIN) --json -i "/tmp/imgcli_bin/*.png" --out-dir /tmp/imgcli_out -vf "scale=20:-1:lanczos" -f qoi -y >/dev/null
+	@test -f /tmp/imgcli_out/a.qoi -a -f /tmp/imgcli_out/b.qoi && echo "  batch (--out-dir): OK"
 	@command -v python3 >/dev/null && ./$(BIN) -filters --json | python3 -m json.tool >/dev/null && echo "  -filters --json: valid" || echo "  (skipped -filters --json validation: no python3)"
 	@echo "check: OK"
 

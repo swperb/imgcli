@@ -119,7 +119,10 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-f FMT] [-y|-n] [--json] OUTPUT
   -f FMT       output format (png/jpg/bmp/tga/ppm/qoi); required when OUTPUT
                is '-' (stdout), an optional override for files
   -y / -n      overwrite / never overwrite the output
-  --json       emit one machine-readable JSON result line (for scripts/agents)
+  --out-dir D  batch mode: write one output per input into D (basename kept,
+               extension from -f or the input). Globs in -i are expanded.
+  --fail-fast  in batch mode, stop at the first failing file
+  --json       emit one machine-readable JSON result line (an array in batch)
   --quiet      suppress the human-readable success line
   --dry-run    validate the filtergraph + report output dims; write nothing
   -filters     list every filter (add --json for a machine-readable list)
@@ -129,6 +132,10 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-f FMT] [-y|-n] [--json] OUTPUT
 
 OUTPUT is a file path or '-' for stdout. When piping, the result line is
 written to stderr so stdout carries only the encoded image bytes.
+
+Batch mode (`--out-dir`) processes each input independently and keeps going on
+per-file errors (use `--fail-fast` to stop). The exit code is non-zero if any
+file failed.
 ```
 
 Colours accept `#rgb`, `#rrggbb`, `#rrggbbaa`, `0x…`, `r-g-b[-a]`, or names
@@ -172,6 +179,9 @@ imgcli -i testsrc=640x480 card.png
 
 # Pipe-friendly: read stdin, write stdout (use -f to name the output format)
 curl -s https://example.com/in.png | imgcli -i - -vf "scale=800:-1" -f jpg - > out.jpg
+
+# Batch a whole folder into thumbnails (one call; per-file results)
+imgcli -i "photos/*.jpg" --out-dir thumbs -vf "scale=400:-1:lanczos" -f png
 ```
 
 ## For AI agents & scripting

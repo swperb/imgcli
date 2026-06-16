@@ -1,5 +1,5 @@
 PackageIdentifier: swperb.imgcli
-PackageVersion: 0.3.0
+PackageVersion: 0.4.0
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
@@ -7,7 +7,7 @@ NestedInstallerFiles:
     PortableCommandAlias: imgcli
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/swperb/imgcli/releases/download/v0.3.0/imgcli-windows-x86_64.zip
-    InstallerSha256: E1C1E65A934D8D64604B029F3AD35BABBEE0BD93840C34B0A58010A6298279D3
+    InstallerUrl: https://github.com/swperb/imgcli/releases/download/v0.4.0/imgcli-windows-x86_64.zip
+    InstallerSha256: 78A5B86364265F6F32F75F98F35A61102A45758FA86AFD2232D696FCD58E3DF0
 ManifestType: installer
 ManifestVersion: 1.6.0

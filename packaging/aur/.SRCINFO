@@ -1,6 +1,6 @@
 pkgbase = imgcli
 	pkgdesc = Dependency-free CLI to convert, resize, crop, filter & composite images (ffmpeg-style)
-	pkgver = 0.3.0
+	pkgver = 0.4.0
 	pkgrel = 1
 	url = https://github.com/swperb/imgcli
 	arch = x86_64
@@ -9,7 +9,7 @@ pkgbase = imgcli
 	makedepends = gcc
 	makedepends = make
 	depends = glibc
-	source = imgcli-0.3.0.tar.gz::https://github.com/swperb/imgcli/archive/refs/tags/v0.3.0.tar.gz
-	sha256sums = ed0ec9e323ceb7c0e68c727a23587c2e1544857de3ad3878875edf679a825bb3
+	source = imgcli-0.4.0.tar.gz::https://github.com/swperb/imgcli/archive/refs/tags/v0.4.0.tar.gz
+	sha256sums = 3eedde19ddfa25dc3ed453a94f491b561f92d3e1af6fb2c66929db48e530f644
 
 pkgname = imgcli

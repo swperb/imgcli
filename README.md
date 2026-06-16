@@ -4,13 +4,14 @@
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/swperb/imgcli/badge)](https://scorecard.dev/viewer/?uri=github.com/swperb/imgcli)
 [![Flawfinder C security scan](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml/badge.svg)](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml)
 
-**A dependency-free CLI to convert, resize, crop, filter, and composite images** —
-PNG, JPEG, BMP, TGA, GIF, PPM, and QOI — driven by an ffmpeg-style filtergraph. One
-small C binary, no system libraries, compiles anywhere a C11 compiler exists.
+**ImageMagick's power, ffmpeg's syntax, zero dependencies.** A tiny C binary that
+converts, resizes, crops, filters, and composites images — PNG, JPEG, BMP, TGA,
+GIF, PPM, QOI — driven by an ffmpeg-style filtergraph. No system libraries;
+compiles anywhere a C11 compiler exists.
 
-> If you're looking for a lightweight **image converter / image processing
-> library** for the command line — a tiny alternative to ImageMagick `convert`
-> or `ffmpeg` for still images — this is it.
+> ⚡ **~8× faster than ImageMagick** on common resize/filter ops, in a **232 KB**
+> single binary (~470× smaller) — [see the benchmarks](#benchmarks). A lightweight
+> alternative to ImageMagick `convert` or `ffmpeg` for still images.
 
 ![imgcli demo](docs/img/demo.gif)
 
@@ -27,6 +28,27 @@ convolution kernels · alpha-composite overlay · draw boxes · solid fills.
 **Design:** the same paradigm as ffmpeg — *decode → normalize to one common frame
 format (RGBA) → run a comma-separated filtergraph → encode by output extension.*
 
+## Benchmarks
+
+imgcli vs ImageMagick on an Apple Silicon Mac (single-threaded, warm cache).
+Reproduce with `make && bench/bench.sh` — see [bench/RESULTS.md](bench/RESULTS.md)
+for the full method and caveats.
+
+| Operation | imgcli | ImageMagick | speedup |
+| --- | ---: | ---: | ---: |
+| PNG→JPEG + resize (one-shot) | **1.6 ms** | 4.7 ms | **2.9×** |
+| Resize 1200×1200 → 300w | **6.0 ms** | 51.6 ms | **8.6×** |
+| Grayscale 1200×1200 | **48.4 ms** | 389 ms | **8.0×** |
+
+| Footprint | imgcli | ImageMagick |
+| --- | ---: | ---: |
+| Install size | **232 KB** | ~109 MB (≈470× larger) |
+| Dependencies | **0** (libc only) | 17 packages |
+
+ImageMagick is a far broader 16-bit/HDRI toolkit with 200+ formats; imgcli is a
+lean 8-bit pipeline that wins on speed, size, and startup — the shape that
+matters when an agent or script spawns one process per task.
+
 ## Dependencies & formats
 
 The **default build is dependency-free** — a single binary that links only the
@@ -38,8 +60,8 @@ directly in. Nothing to `apt install`, no shared libraries, no version hell.
 - **Built-in formats — no dependencies:** PNG, JPEG, BMP, TGA, GIF, PPM, QOI.
   Other formats that can be implemented in plain C (e.g. TIFF) will also be built
   in and keep the binary dependency-free.
-- **Formats that need external libraries — opt-in only:** **WebP, AVIF, and HEIC**
-  cannot be decoded without large external libraries (libwebp, libavif, libheif);
+- **Formats that need external libraries — opt-in only:** **WebP, AVIF, HEIC, and JPEG XL**
+  cannot be decoded without large external libraries (libwebp, libavif, libheif, libjxl);
   there is no public-domain single-header decoder for them and they are not
   practical to hand-roll. If imgcli adds these, it will be **strictly via opt-in
   build flags** (e.g. `make WEBP=1`) that link those libraries.
@@ -77,8 +99,8 @@ nix run github:swperb/imgcli -- -y -i in.png out.jpg
 nix profile install github:swperb/imgcli
 
 # Debian / Ubuntu / WSL (.deb from the latest release)
-curl -fsSLO https://github.com/swperb/imgcli/releases/latest/download/imgcli_0.4.0_amd64.deb
-sudo apt install ./imgcli_0.4.0_amd64.deb
+curl -fsSLO https://github.com/swperb/imgcli/releases/latest/download/imgcli_0.5.0_amd64.deb
+sudo apt install ./imgcli_0.5.0_amd64.deb
 
 # Arch (AUR)
 yay -S imgcli            # or: paru -S imgcli
@@ -96,7 +118,7 @@ scoop install https://raw.githubusercontent.com/swperb/imgcli/main/packaging/sco
 # From source (only a C compiler and -lm required)
 make            # produces ./imgcli
 make demo       # generates a few sample images
-sudo make install   # installs to /usr/local/bin
+sudo make install   # installs the binary + man page to /usr/local
 ```
 
 ### Use it as a native agent tool (MCP)

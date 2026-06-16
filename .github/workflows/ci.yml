@@ -133,12 +133,27 @@ jobs:
           kill $SVR; echo "HTTP transport OK"
 
   docker:
-    name: docker image (Smithery container)
+    name: docker image (MCP container, stdio + HTTP)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Build the container image
         run: docker build -t imgcli-mcp .
+      - name: stdio smoke as Glama introspects it (docker run -i, initialize + tools/list)
+        run: |
+          # Glama builds this Dockerfile and introspects the server over STDIO
+          # (no PORT set). Replicate that exact check: pipe an MCP handshake on
+          # stdin and assert the tool list comes back on stdout (which must stay
+          # JSON-RPC clean — the server logs its banner to stderr). Passing here
+          # is what lets a Glama release build succeed.
+          out=$(printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | docker run --rm -i imgcli-mcp)
+          echo "$out" | grep -q '"serverInfo"'  || { echo "stdio initialize failed: $out"; exit 1; }
+          echo "$out" | grep -q 'convert_image' || { echo "stdio tools/list missing tools: $out"; exit 1; }
+          echo "Docker stdio (Glama-style) smoke OK"
       - name: HTTP smoke as Smithery runs it (PORT=8081 -> /mcp, real conversion)
         run: |
           docker run -d --name mcp -e PORT=8081 -p 8081:8081 imgcli-mcp

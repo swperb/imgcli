@@ -271,6 +271,17 @@ static Image *f_brightness(char **a, int n, Image *in, AppContext *app, char **e
     return in;
 }
 
+static Image *f_temperature(char **a, int n, Image *in, AppContext *app, char **err) {
+    (void)app; (void)err;
+    double amount = argd(a, n, 0, 0) * 40.0;   /* -1..1 */
+    for (int i = 0; i < in->w * in->h; i++) {
+        unsigned char *p = in->px + i * 4;
+        p[0] = clampb(p[0] + amount);
+        p[2] = clampb(p[2] - amount);
+    }
+    return in;
+}
+
 static Image *f_contrast(char **a, int n, Image *in, AppContext *app, char **err) {
     (void)app; (void)err;
     double k = argd(a, n, 0, 1.0);
@@ -582,6 +593,8 @@ static const FilterDef FILTERS[] = {
     {"negate",      "negate                          alias of invert",            f_invert},
     {"sepia",       "sepia                           warm vintage tone",          f_sepia},
     {"brightness",  "brightness=V                    add V*255, V in -1..1",      f_brightness},
+    {"temperature", "temperature=V                   warm(+)/cool(-), V in -1..1", f_temperature},
+    {"temp",        "temp=V                          alias of temperature",        f_temperature},
     {"contrast",    "contrast=V                      1=none, >1 punchier",        f_contrast},
     {"saturation",  "saturation=V                    0=gray, 1=none, >1 vivid",   f_saturation},
     {"gamma",       "gamma=V                         >1 brightens midtones",      f_gamma},

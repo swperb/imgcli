@@ -57,7 +57,7 @@ Error (stderr, exit ≠ 0):
 | Convert format | `imgcli -y -i in.png out.jpg` |
 | Resize to width 800, keep aspect | `imgcli -y -i in.jpg -vf "scale=800:-1" out.jpg` |
 | Resize to exact box | `imgcli -y -i in.jpg -vf "scale=512:512" out.png` |
-| Make a thumbnail | `imgcli -y -i in.jpg -vf "scale=256:-1" -q 80 thumb.jpg` |
+| Make a thumbnail (HQ downscale) | `imgcli -y -i in.jpg -vf "scale=256:-1:lanczos" -q 80 thumb.jpg` |
 | Crop centre 400×400 | `imgcli -y -i in.jpg -vf "crop=400:400" out.png` |
 | Rotate 90° | `imgcli -y -i in.jpg -vf "transpose=90" out.png` |
 | Grayscale | `imgcli -y -i in.jpg -vf "grayscale" out.png` |

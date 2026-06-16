@@ -136,7 +136,9 @@ Colours accept `#rgb`, `#rrggbb`, `#rrggbbaa`, `0x…`, `r-g-b[-a]`, or names
 
 ## Filters
 
-**Geometry** — `scale=W:H[:nearest|bilinear]` (`-1` keeps aspect),
+**Geometry** — `scale=W:H[:nearest|bilinear|bicubic|lanczos]` (`-1` keeps aspect;
+`bicubic`/`lanczos` are high-quality separable resamplers that anti-alias on
+downscale and stay sharp on upscale — `bilinear` is the default),
 `crop=W:H[:X:Y]`, `pad=W:H[:X:Y[:color]]`, `hflip`, `vflip`,
 `transpose=90|180|270`, `rotate=DEG[:color]` (arbitrary angle, canvas expands).
 
@@ -153,8 +155,8 @@ another `-i` input), `fill=color`, `drawbox=X:Y:W:H:color[:fill|thickness]`.
 ## Examples
 
 ```sh
-# Thumbnail, preserving aspect ratio
-imgcli -i photo.jpg -vf "scale=400:-1" thumb.png
+# Thumbnail, preserving aspect ratio (lanczos = best downscale quality)
+imgcli -i photo.jpg -vf "scale=400:-1:lanczos" thumb.png
 
 # Stylise: desaturate a touch, boost contrast, soften
 imgcli -i photo.jpg -vf "saturation=0.6,contrast=1.15,gblur=1" look.jpg

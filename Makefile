@@ -73,6 +73,8 @@ check: $(BIN)
 	./$(BIN) --json -y -i /tmp/imgcli_check.png /tmp/imgcli_check.qoi
 	./$(BIN) --json -y -i /tmp/imgcli_check.qoi /tmp/imgcli_check_qoi.png
 	./$(BIN) --json --dry-run -i testsrc=64x64 -vf "scale=32:-1,rotate=15"
+	./$(BIN) --json -y -i testsrc=120x90 -vf "scale=480:360:bicubic" /tmp/imgcli_bicubic.png
+	./$(BIN) --json -y -i testsrc=400x400 -vf "scale=64:64:lanczos" /tmp/imgcli_lanczos.png
 	./$(BIN) -i testsrc=64x64 -f png - | ./$(BIN) -i - -vf "scale=32:-1,grayscale" -f qoi - > /tmp/imgcli_pipe.qoi
 	@test -s /tmp/imgcli_pipe.qoi && ./$(BIN) --json -info -i /tmp/imgcli_pipe.qoi >/dev/null && echo "  stdin/stdout pipe: OK"
 	@command -v python3 >/dev/null && ./$(BIN) -filters --json | python3 -m json.tool >/dev/null && echo "  -filters --json: valid" || echo "  (skipped -filters --json validation: no python3)"

@@ -22,6 +22,8 @@ jobs:
         run: make
       - name: Smoke test
         run: make check
+      - name: Integration suite (golden output + exit codes + --json schema)
+        run: make test
       - name: Exercise every filter family + formats
         run: |
           ./imgcli -y -i testsrc=320x240 card.png

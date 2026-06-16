@@ -22,3 +22,12 @@ demo_*.jpg
 
 # MCP bundle artifact
 *.mcpb
+
+# test comparator binary
+tests/ppmcmp
+
+# stray test scratch outputs in the repo root
+/o.png
+/out.*
+/card.png
+/rt.png

@@ -25,7 +25,7 @@ BIN := imgcli
 
 PREFIX ?= /usr/local
 
-.PHONY: all clean install demo asan fuzz fuzz-replay check
+.PHONY: all clean install demo asan fuzz fuzz-replay check test test-update
 all: $(BIN)
 
 $(BIN): $(OBJ)
@@ -39,7 +39,18 @@ src/image.o: src/image.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJ) $(BIN) imgcli.asan imgcli-fuzz
+	rm -f $(OBJ) $(BIN) imgcli.asan imgcli-fuzz tests/ppmcmp
+
+# Integration suite: golden pixel output + format round-trips + exit codes +
+# --json schema. See tests/run.sh. `make test-update` regenerates the goldens.
+tests/ppmcmp: tests/ppmcmp.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+test: $(BIN) tests/ppmcmp
+	@BIN=./$(BIN) CMP=./tests/ppmcmp bash tests/run.sh
+
+test-update: $(BIN) tests/ppmcmp
+	@UPDATE=1 BIN=./$(BIN) CMP=./tests/ppmcmp bash tests/run.sh
 
 install: $(BIN)
 	install -d $(DESTDIR)$(PREFIX)/bin

@@ -5,10 +5,12 @@ name: flawfinder
 # CodeQL's deeper semantic analysis. It scans only our own sources in src/ (not
 # the vendored stb/qoi headers, which are tracked upstream).
 #
-# Findings are uploaded to GitHub code scanning (Security tab). The job only
-# *fails* on critical, level-5 hits (e.g. gets/system/unbounded sprintf), so the
-# badge means "no critical C weaknesses" while lower-severity advisories stay
-# visible for triage instead of blocking.
+# Both the badge gate and the code-scanning upload operate at level 5 ("critical"
+# — e.g. gets/system/unbounded sprintf). Flawfinder is lexical and very
+# false-positive at lower levels (safe strcpy/memcpy/access), so surfacing those
+# in code scanning would flag benign, relocated lines as "new" alerts and block
+# every PR. Restricting to level 5 keeps the badge meaningful, clears that noise,
+# and leaves the semantic code-scanning surface to CodeQL.
 on:
   push:
     branches: [main]
@@ -25,22 +27,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write   # upload the SARIF result to code scanning
+      security-events: write   # upload the (critical-only) SARIF to code scanning
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Install flawfinder
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends flawfinder
 
-      - name: Scan src/ -> SARIF
-        run: flawfinder --sarif --minlevel=1 src/ > flawfinder.sarif || true
+      - name: Scan src/ for critical weaknesses -> SARIF
+        run: flawfinder --sarif --minlevel=5 src/ > flawfinder.sarif || true
 
       - name: Critical-weakness gate (fail only on level >= 5)
         run: flawfinder --error-level=5 src/
 
       - name: Upload SARIF to code scanning
-        if: always()              # surface findings even if the gate above failed
-        continue-on-error: true   # a SARIF hiccup must not flip the badge red
+        if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           sarif_file: flawfinder.sarif

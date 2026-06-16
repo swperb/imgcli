@@ -24,8 +24,9 @@
 
 static char *dupstr(const char *s) {
     if (!s) s = "";
-    char *d = (char *)malloc(strlen(s) + 1);
-    if (d) strcpy(d, s);
+    size_t n = strlen(s) + 1;
+    char *d = (char *)malloc(n);
+    if (d) memcpy(d, s, n);   /* exact-sized buffer; bounded copy */
     return d;
 }
 static void seterr(char **err, const char *msg) { if (err) *err = dupstr(msg); }

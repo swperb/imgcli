@@ -34,4 +34,8 @@ ENV IMGCLI_BIN=/usr/local/bin/imgcli
 # Left unset by default so plain `docker run -i` still speaks stdio.
 EXPOSE 8081
 USER node
-ENTRYPOINT ["node", "/app/dist/index.js"]
+# CMD (not ENTRYPOINT) so a host that supplies its own start command — e.g.
+# Glama's release builder, whose "CMD arguments" field expects the full command —
+# overrides this cleanly instead of appending to it. Plain `docker run -i` (local,
+# Smithery) still uses this default and speaks stdio.
+CMD ["node", "/app/dist/index.js"]

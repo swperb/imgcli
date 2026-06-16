@@ -44,7 +44,9 @@ Most filter work lives in [`src/filters.c`](src/filters.c).
    - return `NULL` and set `*err` on failure
 3. Register the filter in the `FILTERS[]` table near the bottom of `src/filters.c`.
 4. Add a short usage string there so `imgcli -filters` stays accurate.
-5. Update docs or examples when the filter changes user-facing behavior.
+5. Document it: add the new filter to the **Filters** list in [`README.md`](README.md)
+   under its family (Geometry / Colour / Convolution / Composite), and update any
+   examples it affects. A new filter is user-facing, so this step is required.
 
 The filtergraph parser is intentionally simple: filters are chained left-to-right, arguments are colon-separated, and commas separate filters. Keep new filter syntax consistent with that model.
 

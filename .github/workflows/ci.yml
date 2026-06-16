@@ -51,6 +51,8 @@ jobs:
           ./imgcli.asan -y -i c.png -i color=#00ff00aa:80x80 -vf "overlay=10:10,opacity=0.5,tint=red" o.tga
           ./imgcli.asan -y -i c.png o.qoi; ./imgcli.asan -y -i o.qoi -vf "scale=64:-1,grayscale" q.png  # QOI encode + decode
           ./imgcli.asan -y -i c.png -vf "scale=900:700:lanczos" up.png; ./imgcli.asan -y -i c.png -vf "scale=40:30:bicubic" dn.png  # HQ resamplers up + down
+          mkdir -p bin && ./imgcli.asan -y -i testsrc=80x60 bin/a.png && ./imgcli.asan -y -i gradient=40x40 bin/b.png && printf 'junk' > bin/bad.png
+          ./imgcli.asan --json -i "bin/*.png" --out-dir out -vf "scale=32:-1:bicubic" -f qoi -y || true   # batch: ok + per-file failure
           # stdin/stdout pipe paths (non-jpg: stb's jpeg encoder has a known benign signed-shift)
           ./imgcli.asan -i c.png -f png - | ./imgcli.asan -i - -vf "scale=99:-1,grayscale,gblur=2,rotate=20" -f qoi - > piped.qoi
           ./imgcli.asan -info -i piped.qoi

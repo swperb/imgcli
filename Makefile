@@ -25,7 +25,7 @@ BIN := imgcli
 
 PREFIX ?= /usr/local
 
-.PHONY: all clean install install-man demo asan fuzz fuzz-replay check test test-update
+.PHONY: all clean install install-man demo asan fuzz fuzz-replay check test test-update llms-full
 all: $(BIN)
 
 $(BIN): $(OBJ)
@@ -61,6 +61,17 @@ install: $(BIN) install-man
 install-man: man/imgcli.1
 	install -d $(DESTDIR)$(PREFIX)/share/man/man1
 	install -m 644 man/imgcli.1 $(DESTDIR)$(PREFIX)/share/man/man1/imgcli.1
+
+# Regenerate the agent-facing full filter reference from the binary catalogue.
+llms-full: $(BIN)
+	{ \
+		printf '%s\n\n' '# imgcli full filter reference'; \
+		printf '%s\n\n' '> Complete filter catalogue for agents and scripts that need to decide whether imgcli can perform an image operation without having the binary installed.'; \
+		printf '%s\n' 'This file extends [llms.txt](llms.txt). Start there for install notes, key commands, JSON contract, MCP links, and security context.'; \
+		printf '%s\n\n' 'Generated with `make llms-full` from `imgcli -filters --json`.'; \
+		printf '%s\n\n' '## Filters'; \
+		./$(BIN) -filters --json | python3 -c 'import json,sys; filters=json.load(sys.stdin); print("| Name | Syntax | Description |\n| --- | --- | --- |"); esc=lambda s: str(s).replace("|", "\\|"); [print("| `%s` | `%s` | %s |" % (esc(f["name"]), esc(f["syntax"]), esc(f["description"]))) for f in filters]'; \
+	} > llms-full.txt
 
 # AddressSanitizer + UBSan build (catches OOB/UAF/integer-UB at runtime).
 asan: $(SRC)

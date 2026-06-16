@@ -1,0 +1,42 @@
+# imgcli full filter reference
+
+> Complete filter catalogue for agents and scripts that need to decide whether imgcli can perform an image operation without having the binary installed.
+
+This file extends [llms.txt](llms.txt). Start there for install notes, key commands, JSON contract, MCP links, and security context.
+Generated with `make llms-full` from `imgcli -filters --json`.
+
+## Filters
+
+| Name | Syntax | Description |
+| --- | --- | --- |
+| `scale` | `scale=W:H[:nearest\|bilinear\|bicubic\|lanczos]` | -1 keeps aspect; bicubic/lanczos = HQ |
+| `crop` | `crop=W:H[:X:Y]` | default centred |
+| `pad` | `pad=W:H[:X:Y[:color]]` | letterbox onto a canvas |
+| `hflip` | `hflip` | mirror horizontally |
+| `vflip` | `vflip` | mirror vertically |
+| `transpose` | `transpose=90\|180\|270` | 90-degree rotations |
+| `rotate` | `rotate=DEG[:color]` | arbitrary angle, expands |
+| `grayscale` | `grayscale` | luma desaturate |
+| `gray` | `gray` | alias of grayscale |
+| `invert` | `invert` | photographic negative |
+| `negate` | `negate` | alias of invert |
+| `sepia` | `sepia` | warm vintage tone |
+| `brightness` | `brightness=V` | add V*255, V in -1..1 |
+| `temperature` | `temperature=V` | warm(+)/cool(-), V in -1..1 |
+| `temp` | `temp=V` | alias of temperature |
+| `contrast` | `contrast=V` | 1=none, >1 punchier |
+| `saturation` | `saturation=V` | 0=gray, 1=none, >1 vivid |
+| `gamma` | `gamma=V` | >1 brightens midtones |
+| `hue` | `hue=DEG` | rotate colour wheel |
+| `threshold` | `threshold=V` | binarise on luma (0..255) |
+| `opacity` | `opacity=V` | scale alpha, V in 0..1 |
+| `tint` | `tint=color` | multiply by a colour |
+| `blur` | `blur=R` | box blur, radius R |
+| `gblur` | `gblur=SIGMA` | gaussian blur |
+| `sharpen` | `sharpen[=AMOUNT]` | unsharp 3x3 |
+| `edge` | `edge` | sobel edge detect |
+| `emboss` | `emboss` | 3x3 emboss |
+| `convolution` | `convolution=K[:DIV:BIAS]` | custom NxN kernel |
+| `overlay` | `overlay=X:Y[:INDEX]` | alpha-composite an input |
+| `fill` | `fill=color` | flood the whole frame |
+| `drawbox` | `drawbox=X:Y:W:H:color[:fill\|thickness]` | rectangle |

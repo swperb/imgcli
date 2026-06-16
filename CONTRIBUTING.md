@@ -50,6 +50,8 @@ Most filter work lives in [`src/filters.c`](src/filters.c).
 5. Document it: add the new filter to the **Filters** list in [`README.md`](README.md)
    under its family (Geometry / Colour / Convolution / Composite), and update any
    examples it affects. A new filter is user-facing, so this step is required.
+6. Regenerate the agent-facing complete catalogue with `make llms-full` and commit
+   the updated [`llms-full.txt`](llms-full.txt).
 
 The filtergraph parser is intentionally simple: filters are chained left-to-right, arguments are colon-separated, and commas separate filters. Keep new filter syntax consistent with that model.
 

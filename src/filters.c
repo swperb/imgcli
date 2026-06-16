@@ -405,10 +405,10 @@ static Image *f_saturation(char **a, int n, Image *in, AppContext *app, char **e
 
 static Image *f_solarize(char **a, int n, Image *in, AppContext *app, char **err) {
     (void)app; (void)err;
-    double c =  argd(a, n, 0, 128.0);
+    double c = argd(a, n, 0, 128.0);
     for (int i = 0; i < in->w * in->h; i++) {
         unsigned char *p = in->px + i * 4;
-        if (p[0] > c ) { p[0] = clampb(255 - p[0]); }
+        if (p[0] > c) { p[0] = clampb(255 - p[0]); }
         if (p[1] > c) { p[1] = clampb(255 - p[1]); }
         if (p[2] > c) { p[2] = clampb(255 - p[2]); }
     }
@@ -709,7 +709,7 @@ static const FilterDef FILTERS[] = {
     {"temp",        "temp=V                          alias of temperature",        f_temperature},
     {"contrast",    "contrast=V                      1=none, >1 punchier",        f_contrast},
     {"saturation",  "saturation=V                    0=gray, 1=none, >1 vivid",   f_saturation},
-    {"solarize",    "solarize[=T]                    invert channels >= T (default 128)", f_solarize},
+    {"solarize",    "solarize[=T]                    invert channels > T (default 128)", f_solarize},
     {"gamma",       "gamma=V                         >1 brightens midtones",      f_gamma},
     {"hue",         "hue=DEG                          rotate colour wheel",       f_hue},
     {"threshold",   "threshold=V                     binarise on luma (0..255)",  f_threshold},

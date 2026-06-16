@@ -34,8 +34,17 @@ jobs:
       - name: Install flawfinder
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends flawfinder
 
-      - name: Scan src/ for critical weaknesses -> SARIF
-        run: flawfinder --sarif --minlevel=5 src/ > flawfinder.sarif || true
+      - name: Scan src/ for critical weaknesses -> SARIF (level-5 only)
+        run: |
+          # flawfinder's --sarif ignores --minlevel, so it emits every hit
+          # (levels 0-5). Lower levels are lexical false positives (safe
+          # strcpy/memcpy/access in bounds-checked code) that would otherwise
+          # flood code scanning on every run. Generate the full SARIF, then keep
+          # only error-level (level-5) results so the gate's threshold and the
+          # uploaded surface agree.
+          flawfinder --sarif src/ > flawfinder.full.sarif || true
+          jq '.runs[].results |= map(select(.level == "error"))' \
+            flawfinder.full.sarif > flawfinder.sarif
 
       - name: Critical-weakness gate (fail only on level >= 5)
         run: flawfinder --error-level=5 src/

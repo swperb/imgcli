@@ -4,14 +4,18 @@ name: dependabot-automerge
 # (including the mcp-build job). Major bumps are left open for manual review.
 on: pull_request
 
+# Read-only by default; the automerge job opts into the write scopes it needs
+# (OpenSSF Scorecard Token-Permissions).
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   automerge:
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'dependabot[bot]'
+    permissions:
+      contents: write        # squash-merge the PR
+      pull-requests: write    # enable auto-merge
     steps:
       - name: Fetch Dependabot metadata
         id: meta

@@ -30,13 +30,15 @@ static void usage(FILE *f) {
         "imgcli " IMGCLI_VERSION " - ffmpeg-style image conversion & processing in C\n"
         "\n"
         "Usage:\n"
-        "  imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT\n"
+        "  imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-f FMT] [-y|-n] [--json] OUTPUT\n"
         "\n"
         "Options:\n"
-        "  -i INPUT     input file, or a generator (testsrc=WxH, color=NAME:WxH,\n"
-        "               gradient=WxH, checker=WxH). Repeat for compositing inputs.\n"
+        "  -i INPUT     input file, '-' for stdin, or a generator (testsrc=WxH,\n"
+        "               color=NAME:WxH, gradient=WxH, checker=WxH). Repeat for compositing.\n"
         "  -vf GRAPH    filtergraph, e.g. \"scale=800:-1,grayscale,gblur=2\"\n"
         "  -q N         JPEG quality 1..100 (default 90)\n"
+        "  -f FMT       output format (png/jpg/bmp/tga/ppm/qoi); required when OUTPUT is\n"
+        "               '-' (stdout), optional override for files\n"
         "  -y           overwrite OUTPUT without asking\n"
         "  -n           never overwrite OUTPUT\n"
         "  --json       emit a single machine-readable JSON result line\n"
@@ -47,13 +49,14 @@ static void usage(FILE *f) {
         "  -V, --version  print version and exit\n"
         "  -h, --help   show this help\n"
         "\n"
-        "Output formats (by extension): png jpg jpeg bmp tga ppm qoi\n"
+        "Output formats: png jpg jpeg bmp tga ppm qoi (by extension, or -f)\n"
         "\n"
         "Examples:\n"
         "  imgcli -i photo.jpg -vf \"scale=1024:-1\" thumb.png\n"
         "  imgcli -i photo.jpg -vf \"grayscale,contrast=1.2,gblur=1.5\" out.jpg\n"
         "  imgcli -i bg.png -i logo.png -vf \"overlay=20:20\" out.png\n"
-        "  imgcli --json -y -i in.png -vf \"scale=256:-1\" out.png\n");
+        "  imgcli --json -y -i in.png -vf \"scale=256:-1\" out.png\n"
+        "  curl -s URL | imgcli -i - -vf \"scale=800:-1\" -f jpg - > out.jpg\n");
 }
 
 /* Lowercased output format name derived from the file extension. */
@@ -86,6 +89,7 @@ int main(int argc, char **argv) {
     int ninputs = 0;
     const char *graph = NULL;
     const char *output = NULL;
+    const char *format = NULL;     /* -f: output format override (required for stdout) */
     int quality = 90;
     int overwrite = -1;        /* -1 ask/refuse, 1 = -y, 0 = -n */
     int want_filters = 0, want_info = 0, json = 0, quiet = 0, dry_run = 0;
@@ -115,6 +119,10 @@ int main(int argc, char **argv) {
             if (i + 1 >= argc) { emit_error(json, "-q needs an argument"); return 2; }
             quality = atoi(argv[++i]);
         }
+        else if (!strcmp(arg, "-f")) {
+            if (i + 1 >= argc) { emit_error(json, "-f needs an argument"); return 2; }
+            format = argv[++i];
+        }
         else if (arg[0] == '-' && arg[1]) {
             snprintf(msg, sizeof msg, "unknown option '%s' (try -h)", arg);
             emit_error(json, msg);
@@ -139,8 +147,9 @@ int main(int argc, char **argv) {
     int rc = 1;
     for (int i = 0; i < ninputs; i++) {
         char *err = NULL;
-        Image *im = source_is_generator(inputs[i]) ? source_generate(inputs[i], &err)
-                                                    : img_load(inputs[i], &err);
+        Image *im = !strcmp(inputs[i], "-")           ? img_load_stdin(&err)
+                  : source_is_generator(inputs[i])    ? source_generate(inputs[i], &err)
+                                                      : img_load(inputs[i], &err);
         if (!im) {
             snprintf(msg, sizeof msg, "cannot open input '%s': %s", inputs[i], err ? err : "unknown");
             emit_error(json, msg);
@@ -170,8 +179,14 @@ int main(int argc, char **argv) {
 
     if (!output && !dry_run) { emit_error(json, "no output file given; try -h for help"); goto cleanup; }
 
-    /* Overwrite policy (never prompts; skipped in --dry-run, which writes nothing). */
-    if (!dry_run && access(output, F_OK) == 0) {
+    int to_stdout = output && !strcmp(output, "-");
+    if (to_stdout && !dry_run && !format) {
+        emit_error(json, "writing to stdout (-) requires -f FORMAT (png/jpg/bmp/tga/ppm/qoi)");
+        goto cleanup;
+    }
+
+    /* Overwrite policy (never prompts; skipped in --dry-run and for stdout). */
+    if (!dry_run && !to_stdout && access(output, F_OK) == 0) {
         if (overwrite == 0) {
             snprintf(msg, sizeof msg, "'%s' exists and -n was given", output);
             emit_error(json, msg); goto cleanup;
@@ -196,7 +211,7 @@ int main(int argc, char **argv) {
     /* --dry-run: the graph parsed and ran; report the output dimensions and stop
      * before encoding/writing anything. */
     if (dry_run) {
-        const char *fmt = output ? out_format(output) : "n/a";
+        const char *fmt = format ? format : (output ? out_format(output) : "n/a");
         if (json) {
             printf("{\"ok\":true,\"dry_run\":true,\"width\":%d,\"height\":%d,\"format\":\"%s\"}\n",
                    result->w, result->h, fmt);
@@ -210,7 +225,8 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    if (!img_save(output, result, quality, &err)) {
+    long long bytes = -1;
+    if (!img_write(output, result, format, quality, &bytes, &err)) {
         snprintf(msg, sizeof msg, "cannot write '%s': %s", output, err ? err : "unknown");
         emit_error(json, msg);
         free(err);
@@ -218,17 +234,22 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
 
-    /* Success. Report machine-readable result and/or a human line. */
+    /* Success. When piping to stdout the image bytes own stdout, so the result
+     * line goes to stderr to keep the pipe clean. */
     {
-        struct stat st;
-        long long bytes = (stat(output, &st) == 0) ? (long long)st.st_size : -1;
+        const char *fmt = format ? format : out_format(output);
+        FILE *rf = to_stdout ? stderr : stdout;
         if (json) {
-            fputs("{\"ok\":true,\"output\":", stdout);
-            json_str(stdout, output);
-            printf(",\"width\":%d,\"height\":%d,\"format\":\"%s\",\"bytes\":%lld}\n",
-                   result->w, result->h, out_format(output), bytes);
+            fputs("{\"ok\":true,\"output\":", rf);
+            json_str(rf, output);
+            fprintf(rf, ",\"width\":%d,\"height\":%d,\"format\":\"%s\",\"bytes\":%lld}\n",
+                    result->w, result->h, fmt, bytes);
         } else if (!quiet) {
-            printf("imgcli: wrote %s (%dx%d)\n", output, result->w, result->h);
+            if (to_stdout)
+                fprintf(stderr, "imgcli: wrote %lld bytes to stdout (%dx%d %s)\n",
+                        bytes, result->w, result->h, fmt);
+            else
+                printf("imgcli: wrote %s (%dx%d)\n", output, result->w, result->h);
         }
     }
     img_free(result);

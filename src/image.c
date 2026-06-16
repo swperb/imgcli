@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>     /* strcasecmp */
+#ifdef _WIN32
+#include <io.h>          /* _setmode  */
+#include <fcntl.h>       /* _O_BINARY */
+#endif
 
 /* The stb implementations live here, in exactly one translation unit. */
 #define STB_IMAGE_IMPLEMENTATION
@@ -169,6 +174,42 @@ Image *img_load_mem(const unsigned char *buf, int len, char **err) {
     return wrap_decoded(stbi_load_from_memory(buf, len, &w, &h, &n, 4), w, h, err);
 }
 
+/* Put a stdio stream into binary mode (no-op outside Windows, where text mode
+ * would otherwise mangle CR/LF in piped image bytes). */
+static void set_binary(FILE *f) {
+#ifdef _WIN32
+    _setmode(_fileno(f), _O_BINARY);
+#else
+    (void)f;
+#endif
+}
+
+/* Read all of stdin into memory (capped to the same bound as the file path) and
+ * decode it. Lets `-i -` consume a pipe. */
+Image *img_load_stdin(char **err) {
+    set_binary(stdin);
+    const size_t MAXBUF = (size_t)IMG_MAX_PIXELS * 5 + 1024;
+    size_t cap = 1u << 20, len = 0;
+    unsigned char *buf = (unsigned char *)malloc(cap);
+    if (!buf) { if (err) *err = dupstr("out of memory"); return NULL; }
+    for (;;) {
+        if (len == cap) {
+            if (cap >= MAXBUF) { free(buf); if (err) *err = dupstr("stdin input too large"); return NULL; }
+            cap = cap * 2 > MAXBUF ? MAXBUF : cap * 2;
+            unsigned char *nb = (unsigned char *)realloc(buf, cap);
+            if (!nb) { free(buf); if (err) *err = dupstr("out of memory"); return NULL; }
+            buf = nb;
+        }
+        size_t got = fread(buf + len, 1, cap - len, stdin);
+        len += got;
+        if (got == 0) break;   /* EOF or read error */
+    }
+    if (len == 0) { free(buf); if (err) *err = dupstr("empty stdin"); return NULL; }
+    Image *im = img_load_mem(buf, (int)len, err);   /* len <= MAXBUF < INT_MAX */
+    free(buf);
+    return im;
+}
+
 /* Flatten RGBA over an opaque background into a fresh RGB buffer (for jpg/bmp
  * which have no alpha channel). Background is black, matching ffmpeg's default. */
 static unsigned char *to_rgb(const Image *im) {
@@ -183,56 +224,99 @@ static unsigned char *to_rgb(const Image *im) {
     return rgb;
 }
 
-/* Minimal from-scratch P6 (binary) PPM writer - no library involved. */
-static int write_ppm(const char *path, const Image *im) {
-    FILE *f = fopen(path, "wb");
-    if (!f) return 0;
-    fprintf(f, "P6\n%d %d\n255\n", im->w, im->h);
-    unsigned char *rgb = to_rgb(im);
-    int ok = 0;
-    if (rgb) {
-        ok = fwrite(rgb, 3, (size_t)im->w * im->h, f) == (size_t)im->w * im->h;
-        free(rgb);
+/* stb's *_to_func writers hand us chunks via this callback; we forward them to
+ * the destination stream and tally the byte count (and flag any short write). */
+struct wctx { FILE *f; long long n; int err; };
+static void stb_write_cb(void *context, void *data, int size) {
+    struct wctx *w = (struct wctx *)context;
+    if (size > 0) {
+        if (fwrite(data, 1, (size_t)size, w->f) != (size_t)size) w->err = 1;
+        w->n += size;
     }
-    fclose(f);
+}
+
+/* Minimal from-scratch P6 (binary) PPM writer to a stream - no library. */
+static int write_ppm_stream(FILE *f, const Image *im, long long *n) {
+    int hdr = fprintf(f, "P6\n%d %d\n255\n", im->w, im->h);
+    if (hdr < 0) return 0;
+    *n += hdr;
+    unsigned char *rgb = to_rgb(im);
+    if (!rgb) return 0;
+    size_t px = (size_t)im->w * im->h;
+    int ok = fwrite(rgb, 3, px, f) == px;
+    *n += (long long)px * 3;
+    free(rgb);
+    return ok;
+}
+
+/* Encode `im` to an open stream in the named format. Core shared by file and
+ * stdout writers. *bytes_out (if non-NULL) receives the encoded byte count. */
+static int img_save_stream(FILE *out, const Image *im, const char *fmt,
+                           int jpeg_quality, long long *bytes_out, char **err) {
+    struct wctx w = { out, 0, 0 };
+    int ok = 0;
+    if (!strcasecmp(fmt, "png")) {
+        ok = stbi_write_png_to_func(stb_write_cb, &w, im->w, im->h, 4, im->px, im->w * 4);
+    } else if (!strcasecmp(fmt, "jpg") || !strcasecmp(fmt, "jpeg")) {
+        unsigned char *rgb = to_rgb(im);
+        if (rgb) {
+            int q = jpeg_quality < 1 ? 1 : (jpeg_quality > 100 ? 100 : jpeg_quality);
+            ok = stbi_write_jpg_to_func(stb_write_cb, &w, im->w, im->h, 3, rgb, q);
+            free(rgb);
+        }
+    } else if (!strcasecmp(fmt, "bmp")) {
+        unsigned char *rgb = to_rgb(im);
+        if (rgb) { ok = stbi_write_bmp_to_func(stb_write_cb, &w, im->w, im->h, 3, rgb); free(rgb); }
+    } else if (!strcasecmp(fmt, "tga")) {
+        ok = stbi_write_tga_to_func(stb_write_cb, &w, im->w, im->h, 4, im->px);
+    } else if (!strcasecmp(fmt, "ppm")) {
+        ok = write_ppm_stream(out, im, &w.n);
+    } else if (!strcasecmp(fmt, "qoi")) {
+        qoi_desc desc = { (unsigned)im->w, (unsigned)im->h, 4, QOI_SRGB };
+        int len = 0;
+        void *buf = qoi_encode(im->px, &desc, &len);
+        if (buf) {
+            ok = len > 0 && fwrite(buf, 1, (size_t)len, out) == (size_t)len;
+            w.n += len;
+            free(buf);
+        }
+    } else {
+        if (err) *err = dupstr("unsupported output format (use png/jpg/bmp/tga/ppm/qoi)");
+        return 0;
+    }
+    if (w.err) ok = 0;
+    if (!ok) { if (err && !*err) *err = dupstr("encode/write failed"); return 0; }
+    if (bytes_out) *bytes_out = w.n;
+    return 1;
+}
+
+int img_write(const char *path, const Image *im, const char *fmt,
+              int jpeg_quality, long long *bytes_out, char **err) {
+    /* stdout */
+    if (path && path[0] == '-' && path[1] == '\0') {
+        if (!fmt) { if (err) *err = dupstr("writing to stdout (-) requires -f FORMAT"); return 0; }
+        set_binary(stdout);
+        return img_save_stream(stdout, im, fmt, jpeg_quality, bytes_out, err);
+    }
+    /* file: format from the explicit override, else the extension */
+    char ext[16] = {0};
+    if (!fmt) {
+        const char *dot = strrchr(path, '.');
+        if (dot) {
+            size_t i = 0;
+            for (const char *p = dot + 1; *p && i < sizeof(ext) - 1; p++)
+                ext[i++] = (char)tolower((unsigned char)*p);
+        }
+        if (!ext[0]) { if (err) *err = dupstr("output has no extension (or pass -f FORMAT)"); return 0; }
+        fmt = ext;
+    }
+    FILE *f = fopen(path, "wb");
+    if (!f) { if (err) *err = dupstr("cannot open output file"); return 0; }
+    int ok = img_save_stream(f, im, fmt, jpeg_quality, bytes_out, err);
+    if (fclose(f) != 0) ok = 0;
     return ok;
 }
 
 int img_save(const char *path, const Image *im, int jpeg_quality, char **err) {
-    const char *dot = strrchr(path, '.');
-    char ext[16] = {0};
-    if (dot) {
-        size_t i = 0;
-        for (const char *p = dot + 1; *p && i < sizeof(ext) - 1; p++)
-            ext[i++] = (char)tolower((unsigned char)*p);
-    }
-
-    int ok = 0;
-    if (!strcmp(ext, "png")) {
-        ok = stbi_write_png(path, im->w, im->h, 4, im->px, im->w * 4);
-    } else if (!strcmp(ext, "jpg") || !strcmp(ext, "jpeg")) {
-        unsigned char *rgb = to_rgb(im);
-        if (rgb) {
-            int q = jpeg_quality < 1 ? 1 : (jpeg_quality > 100 ? 100 : jpeg_quality);
-            ok = stbi_write_jpg(path, im->w, im->h, 3, rgb, q);
-            free(rgb);
-        }
-    } else if (!strcmp(ext, "bmp")) {
-        unsigned char *rgb = to_rgb(im);
-        if (rgb) { ok = stbi_write_bmp(path, im->w, im->h, 3, rgb); free(rgb); }
-    } else if (!strcmp(ext, "tga")) {
-        ok = stbi_write_tga(path, im->w, im->h, 4, im->px);
-    } else if (!strcmp(ext, "ppm")) {
-        ok = write_ppm(path, im);
-    } else if (!strcmp(ext, "qoi")) {
-        qoi_desc desc = { (unsigned)im->w, (unsigned)im->h, 4, QOI_SRGB };
-        ok = qoi_write(path, im->px, &desc) != 0;  /* returns bytes written, 0 on error */
-    } else {
-        if (err) *err = dupstr(ext[0] ? "unsupported output extension (use png/jpg/bmp/tga/ppm/qoi)"
-                                       : "output has no extension");
-        return 0;
-    }
-
-    if (!ok && err) *err = dupstr("encode/write failed");
-    return ok;
+    return img_write(path, im, NULL, jpeg_quality, NULL, err);
 }

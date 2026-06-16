@@ -108,13 +108,16 @@ call `convert_image`, `probe_image`, and `list_filters` directly — see
 ## Usage
 
 ```
-imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT
+imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-f FMT] [-y|-n] [--json] OUTPUT
 
-  -i INPUT     a file, or a generator (testsrc=WxH, color=NAME:WxH,
-               gradient=WxH, checker=WxH). Repeat -i for compositing inputs;
-               the first is the primary frame, the rest feed `overlay`.
+  -i INPUT     a file, '-' for stdin, or a generator (testsrc=WxH,
+               color=NAME:WxH, gradient=WxH, checker=WxH). Repeat -i for
+               compositing inputs; the first is the primary frame, the rest
+               feed `overlay`.
   -vf GRAPH    filtergraph, e.g. "scale=800:-1,grayscale,gblur=2"
   -q N         JPEG quality 1..100 (default 90)
+  -f FMT       output format (png/jpg/bmp/tga/ppm/qoi); required when OUTPUT
+               is '-' (stdout), an optional override for files
   -y / -n      overwrite / never overwrite the output
   --json       emit one machine-readable JSON result line (for scripts/agents)
   --quiet      suppress the human-readable success line
@@ -123,6 +126,9 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-y|-n] [--json] [--quiet] OUTPUT
   -info        print input dimensions and exit
   -V           print version
   -h           help
+
+OUTPUT is a file path or '-' for stdout. When piping, the result line is
+written to stderr so stdout carries only the encoded image bytes.
 ```
 
 Colours accept `#rgb`, `#rrggbb`, `#rrggbbaa`, `0x…`, `r-g-b[-a]`, or names
@@ -161,6 +167,9 @@ imgcli -i sticker.png -vf "rotate=30:transparent" rotated.png
 
 # No input file? Generate a test card.
 imgcli -i testsrc=640x480 card.png
+
+# Pipe-friendly: read stdin, write stdout (use -f to name the output format)
+curl -s https://example.com/in.png | imgcli -i - -vf "scale=800:-1" -f jpg - > out.jpg
 ```
 
 ## For AI agents & scripting

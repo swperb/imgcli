@@ -1,12 +1,12 @@
 {
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "ffmpeg-style image conversion & processing CLI — dependency-free, single binary.",
     "homepage": "https://github.com/swperb/imgcli",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/swperb/imgcli/releases/download/v0.3.0/imgcli-windows-x86_64.zip",
-            "hash": "e1c1e65a934d8d64604b029f3ad35babbee0bd93840c34b0a58010a6298279d3",
+            "url": "https://github.com/swperb/imgcli/releases/download/v0.4.0/imgcli-windows-x86_64.zip",
+            "hash": "78a5b86364265f6f32f75f98f35a61102a45758fa86afd2232d696fcd58e3df0",
             "extract_dir": "imgcli"
         }
     },

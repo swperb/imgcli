@@ -35,6 +35,10 @@ jobs:
     if: github.event_name == 'push'
     name: build ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write      # upload assets to the GitHub release
+      id-token: write      # OIDC for build-provenance attestation
+      attestations: write  # write the attestation
     strategy:
       fail-fast: false
       matrix:
@@ -61,6 +65,11 @@ jobs:
         run: |
           gh release upload "$GITHUB_REF_NAME" \
             "${{ matrix.asset }}.tar.gz" "${{ matrix.asset }}.tar.gz.sha256" --clobber
+
+      - name: Attest tarball provenance
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        with:
+          subject-path: ${{ matrix.asset }}.tar.gz
 
       # Debian/Ubuntu/WSL package (linux build only). Additive — a failure here
       # does not affect the tarball already uploaded above.
@@ -89,6 +98,13 @@ jobs:
           EOF
           dpkg-deb --build --root-owner-group "$PKG"
           gh release upload "$GITHUB_REF_NAME" "${PKG}.deb" --clobber
+          echo "DEB_FILE=${PKG}.deb" >> "$GITHUB_ENV"
+
+      - name: Attest .deb provenance
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        with:
+          subject-path: ${{ env.DEB_FILE }}
 
   # Publish the imgcli CLI image to the GitHub Container Registry.
   # First push creates a private package — make it public once in the repo's
@@ -120,6 +136,10 @@ jobs:
     needs: create-release
     name: build imgcli-windows-x86_64
     runs-on: ubuntu-latest
+    permissions:
+      contents: write      # upload assets to the GitHub release
+      id-token: write      # OIDC for build-provenance attestation
+      attestations: write  # write the attestation
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Install mingw-w64
@@ -142,3 +162,8 @@ jobs:
         run: |
           gh release upload "$REL_TAG" \
             imgcli-windows-x86_64.zip imgcli-windows-x86_64.zip.sha256 --clobber
+
+      - name: Attest provenance
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        with:
+          subject-path: imgcli-windows-x86_64.zip

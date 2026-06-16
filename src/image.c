@@ -9,6 +9,9 @@
 #ifdef _WIN32
 #include <io.h>          /* _setmode  */
 #include <fcntl.h>       /* _O_BINARY */
+#else
+#include <fcntl.h>       /* open, O_*  */
+#include <unistd.h>      /* close      */
 #endif
 
 /* The stb implementations live here, in exactly one translation unit. */
@@ -184,6 +187,20 @@ static void set_binary(FILE *f) {
 #endif
 }
 
+/* Open `path` for binary writing, creating it 0644 (not world-writable). Avoids
+ * fopen's default 0666-before-umask on POSIX. */
+static FILE *fopen_w(const char *path) {
+#ifdef _WIN32
+    return fopen(path, "wb");   /* Windows permissions are ACL-based, not POSIX mode */
+#else
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (fd < 0) return NULL;
+    FILE *f = fdopen(fd, "wb");
+    if (!f) close(fd);
+    return f;
+#endif
+}
+
 /* Read all of stdin into memory (capped to the same bound as the file path) and
  * decode it. Lets `-i -` consume a pipe. */
 Image *img_load_stdin(char **err) {
@@ -310,7 +327,7 @@ int img_write(const char *path, const Image *im, const char *fmt,
         if (!ext[0]) { if (err) *err = dupstr("output has no extension (or pass -f FORMAT)"); return 0; }
         fmt = ext;
     }
-    FILE *f = fopen(path, "wb");
+    FILE *f = fopen_w(path);
     if (!f) { if (err) *err = dupstr("cannot open output file"); return 0; }
     int ok = img_save_stream(f, im, fmt, jpeg_quality, bytes_out, err);
     if (fclose(f) != 0) ok = 0;

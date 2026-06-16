@@ -9,6 +9,7 @@ on:
     - cron: "31 4 * * 1"   # Mondays 04:31 UTC
   push:
     branches: [main]
+  workflow_dispatch:       # allow on-demand runs from the Actions tab
 
 permissions: read-all
 

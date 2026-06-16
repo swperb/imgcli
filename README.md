@@ -2,6 +2,7 @@
 
 [![Install on Smithery](https://smithery.ai/badge/swperb/imgcli)](https://smithery.ai/servers/swperb/imgcli)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/swperb/imgcli/badge)](https://scorecard.dev/viewer/?uri=github.com/swperb/imgcli)
+[![Flawfinder C security scan](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml/badge.svg)](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml)
 
 **A dependency-free CLI to convert, resize, crop, filter, and composite images** —
 PNG, JPEG, BMP, TGA, GIF, PPM, and QOI — driven by an ffmpeg-style filtergraph. One

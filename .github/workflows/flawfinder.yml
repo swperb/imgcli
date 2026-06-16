@@ -1,0 +1,47 @@
+name: flawfinder
+
+# Flawfinder: a fast, C/C++-specific lexical scan for CWE-classified security
+# weaknesses (risky buffer/string/format-string functions, etc.) — complements
+# CodeQL's deeper semantic analysis. It scans only our own sources in src/ (not
+# the vendored stb/qoi headers, which are tracked upstream).
+#
+# Findings are uploaded to GitHub code scanning (Security tab). The job only
+# *fails* on critical, level-5 hits (e.g. gets/system/unbounded sprintf), so the
+# badge means "no critical C weaknesses" while lower-severity advisories stay
+# visible for triage instead of blocking.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  flawfinder:
+    name: flawfinder (C/C++ CWE scan)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload the SARIF result to code scanning
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install flawfinder
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends flawfinder
+
+      - name: Scan src/ -> SARIF
+        run: flawfinder --sarif --minlevel=1 src/ > flawfinder.sarif || true
+
+      - name: Critical-weakness gate (fail only on level >= 5)
+        run: flawfinder --error-level=5 src/
+
+      - name: Upload SARIF to code scanning
+        if: always()              # surface findings even if the gate above failed
+        continue-on-error: true   # a SARIF hiccup must not flip the badge red
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+        with:
+          sarif_file: flawfinder.sarif
+          category: flawfinder

@@ -33,7 +33,7 @@ imgcli is ~**470× smaller** on disk and ships as a single self-contained binary
 
 - **ImageMagick does far more.** It defaults to 16-bit/HDRI precision with colour
   management, supports 200+ formats, and offers higher-quality resampling
-  (Lanczos, etc.). imgcli is a lean **8-bit RGBA** pipeline with bilinear scaling.
+  (Lanczos, etc.). imgcli is a lean **8-bit RGBA** pipeline (now with bicubic/lanczos resampling too).
 - Part of imgcli's speed is **doing less, more directly** — which is exactly the
   point of a small single-purpose tool. For maximum fidelity, format breadth, or
   advanced filters, reach for ImageMagick. For fast, lightweight, scriptable, and

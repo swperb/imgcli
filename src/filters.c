@@ -68,6 +68,98 @@ static double argd(char **a, int n, int i, double d) { return (i < n && a[i][0])
 static int    argi(char **a, int n, int i, int d)    { return (i < n && a[i][0]) ? atoi(a[i]) : d; }
 static const char *args(char **a, int n, int i, const char *d) { return (i < n && a[i][0]) ? a[i] : d; }
 
+/* --- high-quality separable resampling (bicubic / lanczos) --------------- */
+
+static double k_cubic(double x) {       /* Catmull-Rom bicubic, a = -0.5 */
+    const double a = -0.5;
+    x = fabs(x);
+    if (x < 1.0) return ((a + 2.0) * x - (a + 3.0)) * x * x + 1.0;
+    if (x < 2.0) return (((x - 5.0) * x + 8.0) * x - 4.0) * a;
+    return 0.0;
+}
+static double k_lanczos3(double x) {    /* Lanczos windowed sinc, a = 3 */
+    x = fabs(x);
+    if (x < 1e-8) return 1.0;
+    if (x >= 3.0) return 0.0;
+    double px = M_PI * x;
+    return (3.0 * sin(px) * sin(px / 3.0)) / (px * px);
+}
+
+/* Per-output-sample contributions for resampling one axis. */
+typedef struct { int left, n; double *w; } Tap;
+
+/* Build the contributions for src->dst along one axis. The kernel footprint is
+ * widened when downscaling (fscale) so it low-passes instead of aliasing.
+ * Out-of-range source indices are clamped (edge replicate) at apply time. */
+static Tap *build_taps(int src, int dst, double (*k)(double), double kr, double **pool_out) {
+    double ratio = (double)dst / src;
+    double fscale = ratio < 1.0 ? 1.0 / ratio : 1.0;   /* >1 when downscaling */
+    double support = kr * fscale;
+    int maxn = (int)ceil(support * 2.0) + 2;
+    Tap *taps = (Tap *)malloc((size_t)dst * sizeof *taps);
+    double *pool = (double *)malloc((size_t)dst * maxn * sizeof *pool);
+    if (!taps || !pool) { free(taps); free(pool); return NULL; }
+    for (int o = 0; o < dst; o++) {
+        double center = (o + 0.5) / ratio - 0.5;       /* source coord of output o */
+        int left = (int)ceil(center - support);
+        int right = (int)floor(center + support);
+        double *w = pool + (size_t)o * maxn;
+        int cnt = 0; double sum = 0.0;
+        for (int s = left; s <= right && cnt < maxn; s++) {
+            double wt = k((center - s) / fscale);
+            w[cnt++] = wt; sum += wt;
+        }
+        if (sum != 0.0) for (int i = 0; i < cnt; i++) w[i] /= sum;
+        taps[o].left = left; taps[o].n = cnt; taps[o].w = w;
+    }
+    *pool_out = pool;
+    return taps;
+}
+
+/* Resample `in` to w x h with a separable kernel (radius kr): a horizontal pass
+ * into a temp buffer, then a vertical pass into the output. */
+static Image *resample_kernel(const Image *in, int w, int h, double (*k)(double), double kr, char **err) {
+    Image *out = img_alloc(w, h);
+    unsigned char *tmp = out ? (unsigned char *)malloc((size_t)w * in->h * 4) : NULL;
+    double *poolx = NULL, *pooly = NULL;
+    Tap *tx = build_taps(in->w, w, k, kr, &poolx);
+    Tap *ty = build_taps(in->h, h, k, kr, &pooly);
+    if (!out || !tmp || !tx || !ty) { seterr(err, "out of memory"); goto fail; }
+
+    for (int y = 0; y < in->h; y++) {                  /* horizontal: in -> tmp (w x inH) */
+        const unsigned char *srow = in->px + (size_t)y * in->w * 4;
+        unsigned char *drow = tmp + (size_t)y * w * 4;
+        for (int x = 0; x < w; x++) {
+            double acc[4] = {0,0,0,0};
+            Tap t = tx[x];
+            for (int i = 0; i < t.n; i++) {
+                const unsigned char *p = srow + (size_t)clampi(t.left + i, 0, in->w - 1) * 4;
+                for (int c = 0; c < 4; c++) acc[c] += p[c] * t.w[i];
+            }
+            unsigned char *d = drow + (size_t)x * 4;
+            for (int c = 0; c < 4; c++) d[c] = clampb(acc[c]);
+        }
+    }
+    for (int y = 0; y < h; y++) {                       /* vertical: tmp -> out (w x h) */
+        unsigned char *drow = out->px + (size_t)y * w * 4;
+        Tap t = ty[y];
+        for (int x = 0; x < w; x++) {
+            double acc[4] = {0,0,0,0};
+            for (int i = 0; i < t.n; i++) {
+                const unsigned char *p = tmp + ((size_t)clampi(t.left + i, 0, in->h - 1) * w + x) * 4;
+                for (int c = 0; c < 4; c++) acc[c] += p[c] * t.w[i];
+            }
+            unsigned char *d = drow + (size_t)x * 4;
+            for (int c = 0; c < 4; c++) d[c] = clampb(acc[c]);
+        }
+    }
+    free(tmp); free(tx); free(ty); free(poolx); free(pooly);
+    return out;
+fail:
+    img_free(out); free(tmp); free(tx); free(ty); free(poolx); free(pooly);
+    return NULL;
+}
+
 /* ------------------------------------------------------------- geometry */
 
 static Image *f_scale(char **a, int n, Image *in, AppContext *app, char **err) {
@@ -78,6 +170,10 @@ static Image *f_scale(char **a, int n, Image *in, AppContext *app, char **err) {
     if (w == -1) w = (int)lround((double)in->w * h / in->h);
     if (h == -1) h = (int)lround((double)in->h * w / in->w);
     if (!img_dims_ok(w, h)) { seterr(err, "scale target invalid or exceeds safety limit"); return NULL; }
+
+    /* high-quality separable resamplers */
+    if (!strcmp(flag, "lanczos")) return resample_kernel(in, w, h, k_lanczos3, 3.0, err);
+    if (!strcmp(flag, "bicubic")) return resample_kernel(in, w, h, k_cubic,    2.0, err);
 
     Image *out = img_alloc(w, h);
     if (!out) { seterr(err, "out of memory"); return NULL; }
@@ -579,7 +675,7 @@ typedef struct { const char *name, *usage; FilterFn fn; } FilterDef;
 
 static const FilterDef FILTERS[] = {
     /* geometry */
-    {"scale",       "scale=W:H[:nearest|bilinear]   -1 keeps aspect ratio",      f_scale},
+    {"scale",       "scale=W:H[:nearest|bilinear|bicubic|lanczos]  -1 keeps aspect; bicubic/lanczos = HQ", f_scale},
     {"crop",        "crop=W:H[:X:Y]                  default centred",            f_crop},
     {"pad",         "pad=W:H[:X:Y[:color]]           letterbox onto a canvas",    f_pad},
     {"hflip",       "hflip                           mirror horizontally",        f_hflip},

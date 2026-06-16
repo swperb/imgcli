@@ -1,6 +1,6 @@
 # Maintainer: swperb <stephenproctor291@gmail.com>
 pkgname=imgcli
-pkgver=0.4.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc="Dependency-free CLI to convert, resize, crop, filter & composite images (ffmpeg-style)"
 arch=('x86_64' 'aarch64')
@@ -9,7 +9,7 @@ license=('MIT')
 depends=('glibc')
 makedepends=('gcc' 'make')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/swperb/imgcli/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('3eedde19ddfa25dc3ed453a94f491b561f92d3e1af6fb2c66929db48e530f644')
+sha256sums=('4d1b2b4458787502ae651a8f9d798e8b949df22f37bc711658e7939a5c1e7789')
 
 build() {
   cd "$pkgname-$pkgver"
@@ -26,4 +26,5 @@ package() {
   install -Dm755 imgcli "$pkgdir/usr/bin/imgcli"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 man/imgcli.1 "$pkgdir/usr/share/man/man1/imgcli.1"
 }

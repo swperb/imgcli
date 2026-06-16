@@ -171,7 +171,7 @@ downscale and stay sharp on upscale — `bilinear` is the default),
 `crop=W:H[:X:Y]`, `pad=W:H[:X:Y[:color]]`, `hflip`, `vflip`,
 `transpose=90|180|270`, `rotate=DEG[:color]` (arbitrary angle, canvas expands).
 
-**Colour** — `grayscale`, `invert`, `sepia`, `brightness=V`, `temperature=V`,
+**Colour** — `grayscale`, `invert`, `sepia`, `solarize`, `brightness=V`, `temperature=V`,
 `contrast=V`, `saturation=V`, `gamma=V`, `hue=DEG`, `threshold=V`, `opacity=V`, `tint=color`.
 
 **Convolution** — `blur=R` (box), `gblur=SIGMA` (separable Gaussian),

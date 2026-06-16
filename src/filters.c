@@ -296,11 +296,14 @@ static Image *f_rotate(char **a, int n, Image *in, AppContext *app, char **err) 
     for (int i = 0; i < 4; i++) {
         double rx = c * corners[i][0] - s * corners[i][1];
         double ry = s * corners[i][0] + c * corners[i][1];
-        if (rx < minx) minx = rx; if (rx > maxx) maxx = rx;
-        if (ry < miny) miny = ry; if (ry > maxy) maxy = ry;
+        if (rx < minx) { minx = rx; }
+        if (rx > maxx) { maxx = rx; }
+        if (ry < miny) { miny = ry; }
+        if (ry > maxy) { maxy = ry; }
     }
     int nw = (int)ceil(maxx - minx), nh = (int)ceil(maxy - miny);
-    if (nw < 1) nw = 1; if (nh < 1) nh = 1;
+    if (nw < 1) { nw = 1; }
+    if (nh < 1) { nh = 1; }
     if (!img_dims_ok(nw, nh)) { seterr(err, "rotate result exceeds safety limit (input too large to expand)"); return NULL; }
     Image *out = img_alloc(nw, nh);
     if (!out) { seterr(err, "out of memory"); return NULL; }
@@ -396,6 +399,18 @@ static Image *f_saturation(char **a, int n, Image *in, AppContext *app, char **e
         unsigned char *p = in->px + i * 4;
         double g = luma(p);
         for (int c = 0; c < 3; c++) p[c] = clampb(g + s * (p[c] - g));
+    }
+    return in;
+}
+
+static Image *f_solarize(char **a, int n, Image *in, AppContext *app, char **err) {
+    (void)app; (void)err;
+    double c =  argd(a, n, 0, 128.0);
+    for (int i = 0; i < in->w * in->h; i++) {
+        unsigned char *p = in->px + i * 4;
+        if (p[0] > c ) { p[0] = clampb(255 - p[0]); }
+        if (p[1] > c) { p[1] = clampb(255 - p[1]); }
+        if (p[2] > c) { p[2] = clampb(255 - p[2]); }
     }
     return in;
 }
@@ -694,6 +709,7 @@ static const FilterDef FILTERS[] = {
     {"temp",        "temp=V                          alias of temperature",        f_temperature},
     {"contrast",    "contrast=V                      1=none, >1 punchier",        f_contrast},
     {"saturation",  "saturation=V                    0=gray, 1=none, >1 vivid",   f_saturation},
+    {"solarize",    "solarize[=T]                    invert channels >= T (default 128)", f_solarize},
     {"gamma",       "gamma=V                         >1 brightens midtones",      f_gamma},
     {"hue",         "hue=DEG                          rotate colour wheel",       f_hue},
     {"threshold",   "threshold=V                     binarise on luma (0..255)",  f_threshold},

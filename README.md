@@ -268,5 +268,7 @@ If imgcli is useful to you, consider [sponsoring its development](https://github
 
 ## License
 
-The imgcli source is yours to use freely (MIT). The vendored stb headers are
-public domain and the vendored `qoi.h` is MIT-licensed (see their headers).
+The imgcli source is yours to use freely ([MIT](LICENSE)). The vendored stb
+headers are public domain (or MIT, at your option) and the vendored `qoi.h` is
+MIT-licensed; full third-party notices are in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

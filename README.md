@@ -147,7 +147,8 @@ imgcli [-i INPUT]... [-vf GRAPH] [-q N] [-f FMT] [-y|-n] [--json] OUTPUT
   --json       emit one machine-readable JSON result line (an array in batch)
   --quiet      suppress the human-readable success line
   --dry-run    validate the filtergraph + report output dims; write nothing
-  -filters     list every filter (add --json for a machine-readable list)
+  -filters [NAME]  list every filter, or just NAME's syntax (add --json for a
+               machine-readable list)
   -info        print input dimensions and exit
   -V           print version
   -h           help

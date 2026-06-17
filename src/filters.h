@@ -23,7 +23,9 @@ Image *run_filtergraph(const char *graph, Image *base, AppContext *app, char **e
 /* Print the filter catalogue to stdout (for `imgcli -filters`). */
 void filters_print_list(void);
 
-void filters_print_single(const char *filter_name);
+/* Print one filter's help by exact name (`imgcli -filters NAME`), honouring
+ * --json. Returns 1 if found, 0 if no filter has that name. */
+int filters_print_single(const char *name, int json);
 
 /* Print the filter catalogue as a JSON array of {name, syntax, description}
  * to stdout (for `imgcli -filters --json`). */

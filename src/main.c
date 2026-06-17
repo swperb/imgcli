@@ -206,11 +206,18 @@ int main(int argc, char **argv) {
     int want_filters = 0, want_info = 0, json = 0, quiet = 0, dry_run = 0, fail_fast = 0;
     char msg[512];
 
+    const char *filter_name = NULL; 
+
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
         if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) { usage(stdout); return 0; }
         else if (!strcmp(arg, "-V") || !strcmp(arg, "--version")) { printf("imgcli %s\n", IMGCLI_VERSION); return 0; }
-        else if (!strcmp(arg, "-filters")) want_filters = 1;
+        else if (!strcmp(arg, "-filters")) {
+          want_filters = 1;
+          if (i + 1 < argc && argv[i + 1][0] != '-') {
+            filter_name = argv[++i];
+          }
+        }
         else if (!strcmp(arg, "-info")) want_info = 1;
         else if (!strcmp(arg, "--json")) json = 1;
         else if (!strcmp(arg, "--quiet")) quiet = 1;
@@ -254,7 +261,15 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (want_filters) { if (json) filters_print_json(); else filters_print_list(); return 0; }
+    if (want_filters) { 
+      if (filter_name) {
+        filters_print_single(filter_name);
+      } else {
+        if (json) filters_print_json(); 
+        else filters_print_list(); 
+      }
+      return 0; 
+    }
 
     if (ninputs == 0) { emit_error(json, "no input (use -i); try -h for help"); return 2; }
 

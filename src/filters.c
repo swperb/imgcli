@@ -729,6 +729,24 @@ static const FilterDef FILTERS[] = {
 };
 static const int NFILTERS = (int)(sizeof(FILTERS) / sizeof(FILTERS[0]));
 
+
+/* print a filter whose name contains the user input */
+void filters_print_single(const char *filter_name){
+  char flag = 0;
+
+  for (int i = 0; i < NFILTERS; i++) {
+    if (strstr(FILTERS[i].usage, filter_name) != NULL) {
+      flag ++;
+      printf("  %s\n", FILTERS[i].usage);
+    }
+  }
+  
+  if (!flag) {
+    fprintf(stderr, "error: no filters found matching '%s'\n", filter_name);
+  }
+  return;
+}
+
 void filters_print_list(void) {
     printf("Filters (chain with commas, e.g. -vf \"scale=800:-1,grayscale,gblur=2\"):\n\n");
     for (int i = 0; i < NFILTERS; i++)

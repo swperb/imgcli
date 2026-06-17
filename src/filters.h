@@ -23,6 +23,8 @@ Image *run_filtergraph(const char *graph, Image *base, AppContext *app, char **e
 /* Print the filter catalogue to stdout (for `imgcli -filters`). */
 void filters_print_list(void);
 
+void filters_print_single(const char *filter_name);
+
 /* Print the filter catalogue as a JSON array of {name, syntax, description}
  * to stdout (for `imgcli -filters --json`). */
 void filters_print_json(void);

@@ -94,8 +94,10 @@ Suppress the human-readable success line.
 .B \-\-dry\-run
 Validate the filtergraph and report the output dimensions; write nothing.
 .TP
-.B \-filters
-List every filter. Add
+.BI \-filters " [NAME]"
+List every filter, or with
+.I NAME
+just that one filter's syntax (exit status 1 if no filter has that name). Add
 .B \-\-json
 for a machine-readable list.
 .TP

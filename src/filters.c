@@ -762,6 +762,30 @@ void filters_print_json(void) {
     printf("]\n");
 }
 
+/* Print one filter's help, looked up by exact name (for `imgcli -filters NAME`).
+ * With json, emits the same [{name,syntax,description}] array shape as
+ * filters_print_json, filtered to the single match. Returns 1 if the filter was
+ * found, 0 otherwise (so the caller can set a non-zero exit code). */
+int filters_print_single(const char *name, int json) {
+    for (int i = 0; i < NFILTERS; i++) {
+        if (strcmp(FILTERS[i].name, name) != 0) continue;
+        if (json) {
+            char syntax[128];
+            const char *desc;
+            split_usage(FILTERS[i].usage, syntax, sizeof syntax, &desc);
+            fputs("[\n  {\"name\":", stdout);      json_str(stdout, FILTERS[i].name);
+            fputs(",\"syntax\":", stdout);         json_str(stdout, syntax);
+            fputs(",\"description\":", stdout);    json_str(stdout, desc);
+            fputs("}\n]\n", stdout);
+        } else {
+            printf("  %s\n", FILTERS[i].usage);
+        }
+        return 1;
+    }
+    fprintf(stderr, "imgcli: no filter named '%s' (try -filters to list them)\n", name);
+    return 0;
+}
+
 /* trim leading/trailing ascii whitespace in place, returns start */
 static char *trim(char *s) {
     while (*s && isspace((unsigned char)*s)) s++;

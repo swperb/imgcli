@@ -169,7 +169,7 @@ Colours accept `#rgb`, `#rrggbb`, `#rrggbbaa`, `0x…`, `r-g-b[-a]`, or names
 **Geometry** — `scale=W:H[:nearest|bilinear|bicubic|lanczos]` (`-1` keeps aspect;
 `bicubic`/`lanczos` are high-quality separable resamplers that anti-alias on
 downscale and stay sharp on upscale — `bilinear` is the default),
-`crop=W:H[:X:Y]`, `pad=W:H[:X:Y[:color]]`, `hflip`, `vflip`,
+`crop=W:H[:X:Y]`, `pad=W:H[:X:Y[:color]]`, `pixelate=SIZE`, `hflip`, `vflip`,
 `transpose=90|180|270`, `rotate=DEG[:color]` (arbitrary angle, canvas expands).
 
 **Colour** — `grayscale`, `invert`, `sepia`, `solarize`, `brightness=V`, `temperature=V`,

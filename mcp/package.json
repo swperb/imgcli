@@ -50,11 +50,11 @@
     "bundle": "./build-bundle.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "@types/node": "^25.9.3"
+    "typescript": "^7.0.2",
+    "@types/node": "^26.1.2"
   }
 }

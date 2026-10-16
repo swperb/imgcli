@@ -1,6 +1,6 @@
 # imgcli — command-line image conversion & processing in C
 
-[![Install on Smithery](https://smithery.ai/badge/swperb/imgcli)](https://smithery.ai/servers/swperb/imgcli)
+[![LightNow capabilities](https://lightnow.ai/badge/io.github.swperb/imgcli)](https://lightnow.ai/servers/io.github.swperb/imgcli)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/swperb/imgcli/badge)](https://scorecard.dev/viewer/?uri=github.com/swperb/imgcli)
 [![Flawfinder C security scan](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml/badge.svg)](https://github.com/swperb/imgcli/actions/workflows/flawfinder.yml)
 

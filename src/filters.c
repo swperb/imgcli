@@ -234,6 +234,42 @@ static Image *f_pad(char **a, int n, Image *in, AppContext *app, char **err) {
     return out;
 }
 
+static Image *f_pixelate(char **a, int n, Image *in, AppContext *app, char **err) {
+    (void)app; (void)err;
+    int block_size = (int)argd(a, n, 0, 8.0);
+    if (block_size < 1) { block_size = 1; }
+    int block_square = block_size * block_size;
+    int x_blocks = in->w / block_size;
+    int y_blocks = in->h / block_size;
+
+    Image *out = img_alloc(x_blocks * block_size, y_blocks * block_size);
+    for (int y_offset = 0; y_offset < y_blocks; y_offset++) {
+        for (int x_offset = 0; x_offset < x_blocks; x_offset++) {
+            unsigned long avg[4] = {0,0,0,0};
+
+            //First pass to get the totals
+            for (int y = y_offset * block_size; y < y_offset * block_size + block_size; y++) {
+                for (int x = x_offset * block_size; x < x_offset * block_size + block_size; x++) {
+                    unsigned char *p = img_at(in, x, y);
+                    avg[0] += p[0]; avg[1] += p[1]; avg[2] += p[2]; avg[3] += p[3];
+                }
+            }
+
+            avg[0] /= block_square; avg[1] /= block_square; avg[2] /= block_square; avg[3] /= block_square;
+
+            //Second pass to set the pixels
+            for (int y = y_offset * block_size; y < y_offset * block_size + block_size; y++) {
+                for (int x = x_offset * block_size; x < x_offset * block_size + block_size; x++) {
+                    unsigned char *d = img_at(out, x, y);
+                    d[0] = avg[0]; d[1] = avg[1]; d[2] = avg[2]; d[3] = avg[3];
+                }
+            }
+        }
+    }
+
+    return out;
+}
+
 static Image *f_hflip(char **a, int n, Image *in, AppContext *app, char **err) {
     (void)a; (void)n; (void)app; (void)err;
     for (int y = 0; y < in->h; y++)
@@ -694,6 +730,7 @@ static const FilterDef FILTERS[] = {
     {"scale",       "scale=W:H[:nearest|bilinear|bicubic|lanczos]  -1 keeps aspect; bicubic/lanczos = HQ", f_scale},
     {"crop",        "crop=W:H[:X:Y]                  default centred",            f_crop},
     {"pad",         "pad=W:H[:X:Y[:color]]           letterbox onto a canvas",    f_pad},
+    {"pixelate",    "pixelate=SIZE                   average SIZE×SIZE blocks",   f_pixelate},
     {"hflip",       "hflip                           mirror horizontally",        f_hflip},
     {"vflip",       "vflip                           mirror vertically",          f_vflip},
     {"transpose",   "transpose=90|180|270            90-degree rotations",        f_transpose},

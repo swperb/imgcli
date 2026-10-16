@@ -12,6 +12,7 @@ Generated with `make llms-full` from `imgcli -filters --json`.
 | `scale` | `scale=W:H[:nearest\|bilinear\|bicubic\|lanczos]` | -1 keeps aspect; bicubic/lanczos = HQ |
 | `crop` | `crop=W:H[:X:Y]` | default centred |
 | `pad` | `pad=W:H[:X:Y[:color]]` | letterbox onto a canvas |
+| `pixelate` | `pixelate=SIZE` | average SIZE×SIZE blocks |
 | `hflip` | `hflip` | mirror horizontally |
 | `vflip` | `vflip` | mirror vertically |
 | `transpose` | `transpose=90\|180\|270` | 90-degree rotations |

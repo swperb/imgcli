@@ -50,7 +50,7 @@
     "bundle": "./build-bundle.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
